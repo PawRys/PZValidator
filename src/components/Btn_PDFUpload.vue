@@ -25,8 +25,8 @@ async function doit(event: Event): Promise<void> {
 
 	productStore.searchQuery = '';
 	products.forEach(item => {
-		if (productStore.products.find(i => i.id === item.id)) {
-			productStore.updateProduct(item.id, item);
+		if (productStore.products.find(i => i.invoiceId === item.invoiceId)) {
+			productStore.updateProduct(item.invoiceId, item);
 		} else {
 			productStore.addProduct(item);
 		}
@@ -173,7 +173,8 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 			sourceTextOne = textrow;
 
 			results.push({
-				id: idNum,
+				id: crypto.randomUUID(),
+				invoiceId: idNum,
 				timestamp: Date.now(),
 				PZ: {
 					sourcetxt: `${sourceTextOne}`.replace(/\s{2,}/g, ' ').trim(),
@@ -195,6 +196,7 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 
 function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	const results: Product[] = [];
+	const polishUnits: Record<string, string> = { cbm: 'm3', sqr: 'm2', pcs: 'szt' };
 
 	const sizeT_re = /(\d{1,2}(?:[,.]\d)?)x/;
 	const sizeA_re = /(\d{3,4})x/;
@@ -229,11 +231,12 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 			sourceTextTwo = textrow;
 
 			results.push({
-				id: idNum,
+				id: crypto.randomUUID(),
+				invoiceId: idNum,
+				timestamp: Date.now(),
 				cmrNum: CMRNum,
 				packing: itemPacking,
 				truckNum: truckNum,
-				timestamp: Date.now(),
 				arrivalPlace: arrivalPlace,
 				INV: {
 					sourcetxt: `${sourceTextOne} ${sourceTextTwo}`.replace(/\s{2,}/g, ' ').trim(),
@@ -243,7 +246,7 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 					face: itemFace,
 					color: itemColor,
 					quantity: Number(itemQty.replace(/,/, '.')),
-					quantityUnit: itemQtyUnit,
+					quantityUnit: polishUnits[itemQtyUnit.trim()]!,
 				},
 			});
 		}

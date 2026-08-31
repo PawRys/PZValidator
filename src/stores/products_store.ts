@@ -1,118 +1,106 @@
-import { defineStore } from 'pinia'
-import type { Product } from '@/types/shared_types'
+import { defineStore } from 'pinia';
+import type { Product } from '@/types/shared_types';
 // import { useSettingsStore } from '@/stores/settings_store'
 
 export const useProductStore = defineStore('products', {
-  state: () => ({
-    products: [] as Product[],
-    searchQuery: '',
-    // sortOrder: useSettingsStore().sortOrderOfScreen || ('default' as keyof typeof sortFunctions),
-    printMode: 'double' as 'single' | 'double' | 'checklist',
-  }),
+	state: () => ({
+		products: [] as Product[],
+		searchQuery: '',
+		// sortOrder: useSettingsStore().sortOrderOfScreen || ('default' as keyof typeof sortFunctions),
+		printMode: 'double' as 'single' | 'double' | 'checklist',
+	}),
 
-  getters: {
-    filteredProducts(state) {
-      const searchTerms = String(state.searchQuery ?? '')
-        .toLowerCase()
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
+	getters: {
+		filteredProducts(state) {
+			const searchTerms = String(state.searchQuery ?? '')
+				.toLowerCase()
+				.trim()
+				.split(/\s+/)
+				.filter(Boolean);
 
-      let products = state.products
+			let products = state.products;
 
-      if (searchTerms.length > 0) {
-        products = products.filter((product:any) => {
-          const searchableText = [
-            product.id,
-            product.title,
-            product.desc,
-            product.note,
-            product.glue,
-            product.arrivalPlace,
-            product.truckNum,
-            product.cmrNum,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
+			if (searchTerms.length > 0) {
+				products = products.filter((product: any) => {
+					const searchableText = [product.id, product.title, product.desc, product.note, product.glue, product.arrivalPlace, product.truckNum, product.cmrNum].filter(Boolean).join(' ').toLowerCase();
 
-          return searchTerms.every((term) => searchableText.includes(term))
-        })
-      }
+					return searchTerms.every(term => searchableText.includes(term));
+				});
+			}
 
-      // if (sortFunctions) {
-        // products = sortFunctions[state.sortOrder](products)
-      // }
+			// if (sortFunctions) {
+			// products = sortFunctions[state.sortOrder](products)
+			// }
 
-      return products
-    },
-  },
+			return products;
+		},
+	},
 
-  actions: {
-    addProduct(product: Product) {
-      const exists = this.products.some((p) => p.id === product.id)
+	actions: {
+		addProduct(product: Product) {
+			const exists = this.products.some(p => p.id === product.id);
 
-      if (exists) {
-        return
-      }
+			if (exists) {
+				return;
+			}
 
-      this.products.push(product)
-    },
+			this.products.push(product);
+		},
 
-    removeProduct(id: string) {
-      this.products = this.products.filter((product) => product.id !== id)
-    },
+		removeProduct(id: string) {
+			this.products = this.products.filter(product => product.id !== id);
+		},
 
-    removeSelected(productsToRemove: Product[]) {
-      const ids = new Set(productsToRemove.map((product) => product.id))
+		removeSelected(productsToRemove: Product[]) {
+			const ids = new Set(productsToRemove.map(product => product.id));
 
-      this.products = this.products.filter((product) => !ids.has(product.id))
-    },
+			this.products = this.products.filter(product => !ids.has(product.id));
+		},
 
-    removeAll() {
-      this.products = []
-    },
+		removeAll() {
+			this.products = [];
+		},
 
-    updateProduct(id: string, updatedProduct: Partial<Product>) {
-      const product = this.products.find((product) => product.id === id)
+		updateProduct(invoiceId: string, updatedProduct: Partial<Product>) {
+			const product = this.products.find(product => product.invoiceId === invoiceId);
 
-      if (!product) return
+			if (!product) return;
 
-      Object.assign(product, updatedProduct)
-    },
-  },
-})
+			Object.assign(product, updatedProduct);
+		},
+	},
+});
 
 const compare = (a: unknown, b: unknown): number => {
-  const aStr = String(a ?? '').trim()
-  const bStr = String(b ?? '').trim()
+	const aStr = String(a ?? '').trim();
+	const bStr = String(b ?? '').trim();
 
-  const aNum = Number(aStr.replace(',', '.'))
-  const bNum = Number(bStr.replace(',', '.'))
+	const aNum = Number(aStr.replace(',', '.'));
+	const bNum = Number(bStr.replace(',', '.'));
 
-  const aIsNumber = aStr !== '' && Number.isFinite(aNum)
-  const bIsNumber = bStr !== '' && Number.isFinite(bNum)
+	const aIsNumber = aStr !== '' && Number.isFinite(aNum);
+	const bIsNumber = bStr !== '' && Number.isFinite(bNum);
 
-  if (aIsNumber && bIsNumber) {
-    return aNum - bNum
-  }
+	if (aIsNumber && bIsNumber) {
+		return aNum - bNum;
+	}
 
-  return aStr.localeCompare(bStr, undefined, {
-    numeric: true,
-    sensitivity: 'base',
-  })
-}
+	return aStr.localeCompare(bStr, undefined, {
+		numeric: true,
+		sensitivity: 'base',
+	});
+};
 
 const parseSize = (size: string) => {
-  return size
-    .replace(',', '.')
-    .split('x')
-    .map((s) => parseFloat(s)) as [number, number, number]
-}
+	return size
+		.replace(',', '.')
+		.split('x')
+		.map(s => parseFloat(s)) as [number, number, number];
+};
 
 const parseFormat = (val: [number, number, number]) => {
-  return [val[0], Math.round(val[1] / 305), Math.round(val[2] / 305)] as [number, number, number]
-}
+	return [val[0], Math.round(val[1] / 305), Math.round(val[2] / 305)] as [number, number, number];
+};
 
 // const sortFunctions = {
 //   default(products: Product[]) {

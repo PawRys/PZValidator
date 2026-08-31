@@ -1,9 +1,10 @@
 export interface Product {
 	id: string;
+	invoiceId: string;
+	timestamp: number;
 	cmrNum?: string;
 	packing?: string;
 	truckNum?: string;
-	timestamp: number;
 	arrivalPlace?: string;
 	PZ?: ProductData;
 	INV?: ProductData;
