@@ -1,123 +1,84 @@
 :root {
-  --accent-050: #fff8e6;
-  --accent-100: #ffedbf;
-  --accent-200: #ffdb80;
-  --accent-300: #ffc94d;
-  --accent-400: #ffb91a;
-  --accent-500: #ffa500;
-  --accent-600: #e69500;
-  --accent-700: #cc8500;
-  --accent-800: #a86d00;
-  --accent-900: #805200;
-  --accent-950: #4d3100;
+	--neutral-000: #ffffff;
+	--neutral-050: #fafafa;
+	--neutral-100: #f4f4f4;
+	--neutral-200: #e5e5e5;
+	--neutral-300: #d4d4d4;
+	--neutral-400: #a3a3a3;
+	--neutral-500: #737373;
+	--neutral-600: #525252;
+	--neutral-700: #404040;
+	--neutral-800: #262626;
+	--neutral-900: #171717;
+	--neutral-950: #0a0a0a;
+	--neutral-999: #000000;
 
-  --neutral-000: #ffffff;
-  --neutral-050: #f8f9fb;
-  --neutral-100: #f1f3f6;
-  --neutral-200: #e3e6eb;
-  --neutral-300: #d1d5dc;
-  --neutral-400: #aeb4be;
-  --neutral-500: #858c98;
-  --neutral-600: #656c78;
-  --neutral-700: #484f5b;
-  --neutral-800: #303640;
-  --neutral-900: #1f252e;
-  --neutral-950: #11161d;
+	--action-050: #fff7ed;
+	--action-100: #ffedd5;
+	--action-200: #fed7aa;
+	--action-300: #fdba74;
+	--action-400: #fb923c;
+	--action-500: #f97316;
+	--action-600: #ea580c;
+	--action-700: #c2410c;
+	--action-800: #9a3412;
+	--action-900: #7c2d12;
 
-  /* --neutral-000: #ffffff; */
-  /* --neutral-050: #fcfaf7; */
-  /* --neutral-100: #f7f4ee; */
-  /* --neutral-200: #ebe6dc; */
-  /* --neutral-300: #d9d2c5; */
-  /* --neutral-400: #b8afa0; */
-  /* --neutral-500: #928878; */
-  /* --neutral-600: #706759; */
-  /* --neutral-700: #514a40; */
-  /* --neutral-800: #37322c; */
-  /* --neutral-900: #25221e; */
-  /* --neutral-950: #15130f; */
+	--action-color-subtle: var(--action-100);
+	--action-color-normal: var(--action-300);
+	--action-color-strong: var(--action-500);
 
-  --main-bg-color: var(--neutral-050);
-  --main-font-color: var(--neutral-950);
+	--border-color-subtle: var(--neutral-300);
+	--border-color-normal: var(--neutral-400);
+	--border-color-strong: var(--neutral-500);
 
-  --button-bg-color: var(--neutral-100);
-  --button-font-color: var(--main-font-color);
-  --button-border-color: var(--neutral-400);
-  --button-bg-color-hover: var(--neutral-050);
+	--font-color-link: var(--neutral-700);
+	--font-color-hover: var(--neutral-400);
+	--font-color-normal: var(--neutral-800);
+	--font-color-selected: var(--action-050);
 
-  --input-bg-color: var(--neutral-000);
-  --input-font-color: var(--main-font-color);
-  --input-border-color: var(--neutral-400);
-  --input-bg-color-selected: var(--accent-050);
-  --input-font-color-selected: var(--main-font-color);
+	--background-color-main: var(--neutral-100);
+	--background-color-formfield: var(--neutral-000);
+	--background-color-interactive: var(--neutral-200);
+	--background-color-interactive-hover: var(--neutral-300);
 
-  /* Font */
-  /* --font-family: 'Rajdhani', sans-serif; */
+	--font-family-main: 'Rajdhani', serif;
+	--font-family-heading: 'Teko', sans-serif;
+	--font-family-interactive: 'Rajdhani', sans-serif;
+	--font-family-print: 'Roboto Flex', monospace;
 
-  /* General */
-  /* --bg-color: #fafafa; */
-  /* --font-color: #000; */
-  /* --font-color-faint: #666; */
+	--padding-size-small: 0.1em 0.4em;
+	--padding-size-medium: 0.3em 0.6em;
+	--padding-size-large: 0.6em 0.9em;
 
-  /* Input / Select */
-  /* --input-bg-color: #fff; */
-  /* --input-border-color: #ccc; */
-  /* --input-focus-color: var(--accent-color); */
+	--spacing-small: 0.1em;
+	--spacing-medium: 0.3em;
+	--spacing-large: 0.6em;
 
-  /* --placeholder-color: #999; */
-
-  /* Select */
-  /* --option-bg-color: #fff; */
-  /* --option-color: #000; */
-  /* --option-selected-bg-color: #f0f0f0; */
-  /* --option-selected-color: #000; */
-
-  /* Button */
-  /* --button-bg-color: #f0f0f0; */
-  /* --button-hover-bg-color: #e5e5e5; */
-  /* --button-border-color: #ccc; */
-
-  /* Accent */
-  /* --accent-color: #2563eb; */
-  /* --accent-color-hover: #1d4ed8; */
-
-  /* Status */
-  /* --success-color: #16a34a; */
-  /* --warning-color: #d97706; */
-  /* --error-color: #dc2626; */
+	--button-font-color: #fff;
+	--button-border-color: #fff;
+	--button-background-color: #000;
+	--button-action-border-color: #fff;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* General */
-    /* --bg-color: #303030; */
-    /* --font-color: #fff; */
-    /* --font-color-faint: #999; */
+	:root {
+		--action-color-subtle: var(--action-200);
+		--action-color-normal: var(--action-400);
+		--action-color-strong: var(--action-600);
 
-    /* Input / Select */
-    /* --input-bg-color: #707070; */
-    /* --input-border-color: #888; */
+		--border-color-subtle: var(--neutral-600);
+		--border-color-normal: var(--neutral-500);
+		--border-color-strong: var(--neutral-400);
 
-    /* --placeholder-color: #aaa; */
+		--font-color-link: var(--neutral-300);
+		--font-color-hover: var(--neutral-400);
+		--font-color-normal: var(--neutral-100);
+		--font-color-selected: var(--action-400);
 
-    /* Select */
-    /* --option-bg-color: #707070; */
-    /* --option-color: #fff; */
-    /* --option-selected-bg-color: #505050; */
-    /* --option-selected-color: #fff; */
-
-    /* Button */
-    /* --button-bg-color: #505050; */
-    /* --button-hover-bg-color: #606060; */
-    /* --button-border-color: #666; */
-
-    /* Accent */
-    /* --accent-color: #60a5fa; */
-    /* --accent-color-hover: #93c5fd; */
-
-    /* Status */
-    /* --success-color: #4ade80; */
-    /* --warning-color: #fbbf24; */
-    /* --error-color: #f87171; */
-  }
+		--background-color-main: var(--neutral-900);
+		--background-color-formfield: var(--neutral-700);
+		--background-color-interactive: var(--neutral-800);
+		--background-color-interactive-hover: var(--neutral-700);
+	}
 }

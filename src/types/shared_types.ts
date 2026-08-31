@@ -1,13 +1,15 @@
 export interface Product {
 	id: string;
-	invoiceId: string;
-	timestamp: number;
+	PZnum?: string;
 	cmrNum?: string;
 	packing?: string;
 	truckNum?: string;
+	invoiceNum: string;
 	arrivalPlace?: string;
+	timestamp: number;
 	PZ?: ProductData;
-	INVOICE?: ProductData;
+	INV?: ProductData;
+	score?: boolean[];
 }
 
 export interface ProductData {
@@ -21,4 +23,10 @@ export interface ProductData {
 	quantityUnit: string;
 }
 
-export type SortFunction = 'default' | 'bytime' | 'bysize' | 'byformat' | 'bytruckandsize' | 'bytruckandformat';
+export type SortFunction =
+	| 'default'
+	| 'bytime'
+	| 'bysize'
+	| 'byformat'
+	| 'bytruckandsize'
+	| 'bytruckandformat';

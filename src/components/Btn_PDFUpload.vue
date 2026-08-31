@@ -21,16 +21,9 @@ async function doit(event: Event): Promise<void> {
 	const target = event.target as HTMLInputElement;
 	const pdfFilesList = target.files as FileList;
 	const validFilesList = await validateFiles(pdfFilesList);
-	const products = await processFiles(validFilesList);
-
-	productStore.searchQuery = '';
-	products.forEach(item => {
-		if (productStore.products.find(storedItem => storedItem.invoiceId === item.invoiceId)) {
-			productStore.updateProduct(item.invoiceId, item);
-		} else {
-			productStore.addProduct(item);
-		}
-	});
+	const unmergedProducts = await processFiles(validFilesList);
+	const mergedProducts = mergeProducts(unmergedProducts);
+	console.log(addScoring(mergedProducts));
 }
 
 async function validateFiles(fileList: FileList): Promise<File[]> {
@@ -58,7 +51,7 @@ async function validateFiles(fileList: FileList): Promise<File[]> {
 	return validFiles;
 }
 
-async function processFiles(fileList: File[]) {
+async function processFiles(fileList: File[]): Promise<Product[]> {
 	let result: Product[] = [];
 
 	for (const file of fileList) {
@@ -78,8 +71,6 @@ async function processFiles(fileList: File[]) {
 		//   result.push(...getStigaProducts(TEXTrows))
 		// }
 	}
-
-	console.log(result);
 
 	return result;
 }
@@ -123,7 +114,7 @@ async function PDFtoTEXT(file: File): Promise<string[]> {
 			//   .map((item) => correctText(item.text))
 			//   .join('')
 
-			const CHAR_WIDTH = 6;
+			const CHAR_WIDTH = 5;
 			let currentColumn = 0;
 			const textrow = row.items
 				.sort((a, b) => a.x - b.x)
@@ -150,11 +141,14 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 
 	const sizeT_re = /(\d{1,2}(?:[,.]\d)?)x/;
 	const sizeA_re = /(\d{3,4})x/;
-	const sizeB_re = /(\d{3,4}),?\s+/;
+	const sizeB_re = /(\d{3,4})/;
 	const description_re = /(.+)\s{2,}/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(m3|m2|szt)/;
-	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, description_re, quantity_re, quantityUnit_re), 'i');
+	const full_regexp = new RegExp(
+		combineRegex(sizeT_re, sizeA_re, sizeB_re, description_re, quantity_re, quantityUnit_re),
+		'i',
+	);
 
 	let idNum = '';
 	let idCounter = 0;
@@ -162,19 +156,23 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 	let itemColor = '';
 	let sourceTextOne = '';
 	let sourceTextTwo = '';
+	const PZnum = getPZNum(TEXTrows);
 	const invoiceNum = getInvoiceNum(TEXTrows);
 
-	TEXTrows.forEach(textrow => {
-		const [, itemSizeT, itemSizeA, itemSizeB, itemDescritiopn, itemQty, itemQtyUnit] = textrow.match(full_regexp) ?? [];
-		if (itemSizeT && itemSizeA && itemSizeB && itemDescritiopn && itemQty && itemQtyUnit) {
+	TEXTrows.forEach((textrow, rowIndex) => {
+		const [, itemSizeT, itemSizeA, itemSizeB, itemDescription, itemQty, itemQtyUnit] =
+			textrow.match(full_regexp) ?? [];
+
+		if (itemSizeT && itemSizeA && itemSizeB && itemDescription && itemQty && itemQtyUnit) {
 			idNum = `${invoiceNum || '_id'}_${(++idCounter).toString().padStart(3, '0')}`;
 			itemFace = getFaceType(textrow);
-			itemColor = getColor(textrow, itemDescritiopn);
+			itemColor = getColor(textrow, itemDescription);
 			sourceTextOne = textrow;
 
 			results.push({
-				id: crypto.randomUUID(),
-				invoiceId: idNum,
+				id: idNum,
+				PZnum: PZnum,
+				invoiceNum: idNum,
 				timestamp: Date.now(),
 				PZ: {
 					sourcetxt: `${sourceTextOne}`.replace(/\s{2,}/g, ' ').trim(),
@@ -190,7 +188,7 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 		}
 	});
 
-	console.log(results);
+	// console.log(results);
 	return results;
 }
 
@@ -204,7 +202,10 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	const packing_re = /(\d{1,2}x\d{1,3})\s+/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(cbm|sqr|pcs)/;
-	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, quantity_re, quantityUnit_re), 'i');
+	const full_regexp = new RegExp(
+		combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, quantity_re, quantityUnit_re),
+		'i',
+	);
 
 	let idNum = '';
 	let idCounter = 0;
@@ -225,20 +226,21 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 			itemColor = getColor(textrow, itemFace);
 		}
 
-		const [, itemSizeT, itemSizeA, itemSizeB, itemPacking, itemQty, itemQtyUnit] = textrow.match(full_regexp) ?? [];
+		const [, itemSizeT, itemSizeA, itemSizeB, itemPacking, itemQty, itemQtyUnit] =
+			textrow.match(full_regexp) ?? [];
 		if (itemSizeT && itemSizeA && itemSizeB && itemPacking && itemQty && itemQtyUnit) {
 			idNum = `${invoiceNum || '_id'}_${(++idCounter).toString().padStart(3, '0')}`;
 			sourceTextTwo = textrow;
 
 			results.push({
-				id: crypto.randomUUID(),
-				invoiceId: idNum,
-				timestamp: Date.now(),
+				id: idNum,
 				cmrNum: CMRNum,
 				packing: itemPacking,
 				truckNum: truckNum,
+				invoiceNum: invoiceNum,
 				arrivalPlace: arrivalPlace,
-				INVOICE: {
+				timestamp: Date.now(),
+				INV: {
 					sourcetxt: `${sourceTextOne} ${sourceTextTwo}`.replace(/\s{2,}/g, ' ').trim(),
 					sizeT: Number(itemSizeT.replace(/,/, '.')),
 					sizeA: Number(itemSizeA),
@@ -252,7 +254,7 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 		}
 	});
 
-	console.log(results);
+	// console.log(results);
 	return results;
 }
 
@@ -326,14 +328,46 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 //   return results
 // }
 
+function addScoring(products: Product[]): Product[] {
+	products.forEach(product => {});
+}
+
+function mergeProducts(products: Product[]): Product[] {
+	let mergedProducts: Product[] = [];
+
+	products.forEach(product => {
+		const existingProduct = mergedProducts.find(merge => merge.id === product.id);
+		if (!existingProduct) {
+			mergedProducts.push(product);
+		} else {
+			Object.assign(existingProduct, product);
+		}
+	});
+
+	return mergedProducts;
+}
+
 function getArrivalPlace(text_rows: string[]): string {
 	let result = '';
 	text_rows.forEach((textrow, i) => {
-		const LF = textrow.includes('Terms of delivery:') ? textrow.replace('Terms of delivery:', '').trim() : '';
-		const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow) ? textrow.replace(/100\s*%\s*Prepayment/i, '').trim() : '';
+		const LF = textrow.includes('Terms of delivery:')
+			? textrow.replace('Terms of delivery:', '').trim()
+			: '';
+		const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow)
+			? textrow.replace(/100\s*%\s*Prepayment/i, '').trim()
+			: '';
 
 		if (LF) result = LF;
 		if (ST) result = ST;
+	});
+	return result;
+}
+
+function getPZNum(text_rows: string[]): string {
+	let result = '';
+	text_rows.forEach((textrow, i) => {
+		const PZ = textrow.match(/\d{2}-PZ\/\d{4}\w+\b/i);
+		if (PZ) result = PZ[0];
 	});
 	return result;
 }
@@ -452,7 +486,8 @@ function getColor(text: string, faceType: string): string {
 	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(grey|szar[ya])/gi.test(text)) results.add('grey');
 	if (/(?<=(l\. ?|jasn[yoa] ?|light ?))(grey|szar[ya])/gi.test(text)) results.add('l.grey');
 	if (/(?<=(l\. ?|jasn[yoa] ?|light ?))(br|brąz|brown)/gi.test(text)) results.add('l.brown');
-	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(d\.)?(br|brąz|brown)\b/gi.test(text)) results.add('d.brown');
+	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(d\.)?(br|brąz|brown)\b/gi.test(text))
+		results.add('d.brown');
 
 	/* Apply defaults if no color specified */
 	if (results.size === 0) {
@@ -475,17 +510,9 @@ function getColor(text: string, faceType: string): string {
 </script>
 
 <template>
-	<button
-		class="btn-primary"
-		type="button"
-		@click="openFile">
+	<button class="btn-primary" type="button" @click="openFile">
 		<slot>Dodaj PDF</slot>
-		<input
-			ref="fileInput"
-			type="file"
-			multiple
-			hidden
-			@change="doit" />
+		<input ref="fileInput" type="file" multiple hidden @change="doit" />
 	</button>
 </template>
 

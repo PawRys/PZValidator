@@ -1,14 +1,48 @@
 <script setup lang="ts">
-import UploadPDF from '@/components/Btn_PDFUpload.vue'
+import MyApps from '@/components/MyApps.vue';
+import UploadPDF from '@/components/Btn_PDFUpload.vue';
+
+import { useProductStore } from '@/stores/products_store';
 </script>
 
 <template>
-  <h1>You did it!</h1>
-  <UploadPDF/>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+	<header class="noprint">
+		<p><MyApps /></p>
+		<h1>Tester Przyjęć</h1>
+	</header>
+
+	<main>
+		<h1>You did it!</h1>
+		<UploadPDF />
+
+		<ul v-for="product in useProductStore().products">
+			<li>
+				<span>{{ `${product.INV?.sizeT}x${product.INV?.sizeA}x${product.INV?.sizeB}mm ` }}</span>
+				<span>{{
+					`${product.INV?.face} ${product.INV?.color} ${product.INV?.quantity}${product.INV?.quantityUnit}`
+				}}</span>
+			</li>
+			<li>
+				<span>{{ `${product.PZ?.sizeT}x${product.INV?.sizeA}x${product.INV?.sizeB}mm ` }}</span>
+				<span>{{
+					`${product.PZ?.face} ${product.PZ?.color} ${product.PZ?.quantity}${product.PZ?.quantityUnit}`
+				}}</span>
+			</li>
+		</ul>
+	</main>
+
+	<footer class="noprint">
+		<p>Wszelkie prawa zastrzeżone - Paweł Ryszkowski</p>
+		<p>
+			Uwagi i pomoc techniczna:
+			<a href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205" target="_blank"
+				>pawrys.kontakt@gmail.com</a
+			>
+			<span> - </span>
+			<a href="https://github.com/PawRys/">Github/PawRys</a>
+		</p>
+		<p></p>
+	</footer>
 </template>
 
 <style scoped></style>

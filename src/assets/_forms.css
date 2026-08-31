@@ -1,35 +1,18 @@
 input,
-select,
-textarea {
-  border: 1px solid var(--input-border-color);
-  border-radius: 0.1em;
-  padding: 0.5em;
-  background-color: var(--input-bg-color);
-  color: var(--input-font-color);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: var(--placeholder-color);
-}
-
+textarea,
 select {
-  padding: 0em;
+	border: solid 1px var(--border-color-normal);
+	border-radius: var(--spacing-small);
+	padding: var(--padding-size-medium);
+	background-color: var(--background-color-formfield);
+
+	font-family: var(--font-family-print);
+	font-size: 0.95rem;
+	font-weight: 200;
 }
 
-select > option {
-  padding-block: 0.2em;
-  background-color: var(--input-bg-color);
-  color: var(--input-font-color);
-}
-
-select option:checked {
-  background-color: var(--input-bg-color-selected);
-  color: var(--input-font-color-selected);
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--input-focus-color, red);
+input.action,
+textarea.action,
+select.action {
+	border: solid 2px var(--action-color-normal);
 }

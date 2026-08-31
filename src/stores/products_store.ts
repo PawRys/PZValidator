@@ -22,7 +22,19 @@ export const useProductStore = defineStore('products', {
 
 			if (searchTerms.length > 0) {
 				products = products.filter((product: any) => {
-					const searchableText = [product.id, product.title, product.desc, product.note, product.glue, product.arrivalPlace, product.truckNum, product.cmrNum].filter(Boolean).join(' ').toLowerCase();
+					const searchableText = [
+						product.id,
+						product.title,
+						product.desc,
+						product.note,
+						product.glue,
+						product.arrivalPlace,
+						product.truckNum,
+						product.cmrNum,
+					]
+						.filter(Boolean)
+						.join(' ')
+						.toLowerCase();
 
 					return searchTerms.every(term => searchableText.includes(term));
 				});
@@ -47,6 +59,14 @@ export const useProductStore = defineStore('products', {
 			this.products.push(product);
 		},
 
+		updateProduct(invoiceId: string, updatedProduct: Partial<Product>) {
+			const product = this.products.find(product => product.id === invoiceId);
+
+			if (!product) return;
+
+			Object.assign(product, updatedProduct);
+		},
+
 		removeProduct(id: string) {
 			this.products = this.products.filter(product => product.id !== id);
 		},
@@ -59,14 +79,6 @@ export const useProductStore = defineStore('products', {
 
 		removeAll() {
 			this.products = [];
-		},
-
-		updateProduct(invoiceId: string, updatedProduct: Partial<Product>) {
-			const product = this.products.find(product => product.invoiceId === invoiceId);
-
-			if (!product) return;
-
-			Object.assign(product, updatedProduct);
 		},
 	},
 });
