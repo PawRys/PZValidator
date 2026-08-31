@@ -25,7 +25,7 @@ async function doit(event: Event): Promise<void> {
 
 	productStore.searchQuery = '';
 	products.forEach(item => {
-		if (productStore.products.find(i => i.invoiceId === item.invoiceId)) {
+		if (productStore.products.find(storedItem => storedItem.invoiceId === item.invoiceId)) {
 			productStore.updateProduct(item.invoiceId, item);
 		} else {
 			productStore.addProduct(item);
