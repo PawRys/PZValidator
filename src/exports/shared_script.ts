@@ -43,3 +43,5 @@ export const calcWeight = (text: string, packsCount: number): number => {
 
   return 0
 }
+
+export const combineRegex = (...regexes: RegExp[]) => regexes.map(regex => regex.source).join('');

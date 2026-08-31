@@ -1,35 +1,25 @@
-import { z } from 'zod'
+export interface Product {
+  id: string;
+  cmrNum: string;
+  truckNum: string;
+  timestamp: number;
+  arrivalPlace: string;
+  PZ?: ProductData;
+  INV?: ProductData;
+}
 
-const productSchema = z.object({
-  id: z.string(),
-  timestamp: z.number(),
-  title: z.string(),
-  desc: z.string(),
-  note: z.string(),
-  glue: z.string(),
-  weight: z.number(),
-  packsCount: z.number(),
-  piecesCount: z.number(),
-  arrivalPlace: z.string(),
-  truckNum: z.string(),
-  cmrNum: z.string(),
-})
 
-export const productsSchema = z.array(productSchema)
-export type Product = z.infer<typeof productSchema>
-export type SortFunction = 'default' | 'bytime' | 'bysize' | 'byformat' | 'bytruckandsize' | 'bytruckandformat'
+export interface ProductData {
+  sourcetxt: string;
+	sizeT: number;
+	sizeA: number;
+	sizeB: number;
+	face: string;
+	color: string;
+	packing: string;
+	weight: string;
+	weightUnit: string;
+}
 
-// export interface Product {
-//   id: string
-//   timestamp: number
-//   title: string
-//   desc: string
-//   note: string
-//   glue: string
-//   weight: number
-//   packsCount: number
-//   piecesCount: number
-//   arrivalPlace: string
-//   truckNum: string
-//   cmrNum: string
-// }
+
+  export type SortFunction = 'default' | 'bytime' | 'bysize' | 'byformat' | 'bytruckandsize' | 'bytruckandformat'

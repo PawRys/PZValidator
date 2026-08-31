@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import type { Product } from '@/types/shared_types'
-import { useSettingsStore } from '@/stores/settings_store'
+// import { useSettingsStore } from '@/stores/settings_store'
 
 export const useProductStore = defineStore('products', {
   state: () => ({
     products: [] as Product[],
     searchQuery: '',
-    sortOrder: useSettingsStore().sortOrderOfScreen || ('default' as keyof typeof sortFunctions),
+    // sortOrder: useSettingsStore().sortOrderOfScreen || ('default' as keyof typeof sortFunctions),
     printMode: 'double' as 'single' | 'double' | 'checklist',
   }),
 
@@ -21,7 +21,7 @@ export const useProductStore = defineStore('products', {
       let products = state.products
 
       if (searchTerms.length > 0) {
-        products = products.filter((product) => {
+        products = products.filter((product:any) => {
           const searchableText = [
             product.id,
             product.title,
@@ -40,9 +40,9 @@ export const useProductStore = defineStore('products', {
         })
       }
 
-      if (sortFunctions) {
-        products = sortFunctions[state.sortOrder](products)
-      }
+      // if (sortFunctions) {
+        // products = sortFunctions[state.sortOrder](products)
+      // }
 
       return products
     },
@@ -114,96 +114,96 @@ const parseFormat = (val: [number, number, number]) => {
   return [val[0], Math.round(val[1] / 305), Math.round(val[2] / 305)] as [number, number, number]
 }
 
-const sortFunctions = {
-  default(products: Product[]) {
-    return [...products].sort((a, b) => {
-      return compare(a.id, b.id)
-    })
-  },
+// const sortFunctions = {
+//   default(products: Product[]) {
+//     return [...products].sort((a, b) => {
+//       return compare(a.id, b.id)
+//     })
+//   },
 
-  bytime(products: Product[]) {
-    return [...products].sort((a, b) => {
-      return compare(a.timestamp, b.timestamp)
-    })
-  },
+//   bytime(products: Product[]) {
+//     return [...products].sort((a, b) => {
+//       return compare(a.timestamp, b.timestamp)
+//     })
+//   },
 
-  bysize(products: Product[]) {
-    return [...products].sort((a, b) => {
-      const aSize = parseSize(a.title)
-      const bSize = parseSize(b.title)
+//   bysize(products: Product[]) {
+//     return [...products].sort((a, b) => {
+//       const aSize = parseSize(a.title)
+//       const bSize = parseSize(b.title)
 
-      return (
-        compare(aSize[0], bSize[0]) || // Thickness
-        compare(aSize[1], bSize[1]) || // Size A
-        compare(aSize[2], bSize[2]) || // Size B
-        compare(a.piecesCount, b.piecesCount) // Pieces in pack
-      )
-    })
-  },
+//       return (
+//         compare(aSize[0], bSize[0]) || // Thickness
+//         compare(aSize[1], bSize[1]) || // Size A
+//         compare(aSize[2], bSize[2]) || // Size B
+//         compare(a.piecesCount, b.piecesCount) // Pieces in pack
+//       )
+//     })
+//   },
 
-  byformat(products: Product[]) {
-    return [...products].sort((a, b) => {
-      const aSize = parseSize(a.title)
-      const bSize = parseSize(b.title)
+//   byformat(products: Product[]) {
+//     return [...products].sort((a, b) => {
+//       const aSize = parseSize(a.title)
+//       const bSize = parseSize(b.title)
 
-      const aFormat = parseFormat(aSize)
-      const bFormat = parseFormat(bSize)
+//       const aFormat = parseFormat(aSize)
+//       const bFormat = parseFormat(bSize)
 
-      const minAFormat = Math.min(aFormat[1], aFormat[2])
-      const minBFormat = Math.min(bFormat[1], bFormat[2])
+//       const minAFormat = Math.min(aFormat[1], aFormat[2])
+//       const minBFormat = Math.min(bFormat[1], bFormat[2])
 
-      const maxAFormat = Math.max(aFormat[1], aFormat[2])
-      const maxBFormat = Math.max(bFormat[1], bFormat[2])
+//       const maxAFormat = Math.max(aFormat[1], aFormat[2])
+//       const maxBFormat = Math.max(bFormat[1], bFormat[2])
 
-      return (
-        compare(minAFormat, minBFormat) || // Format A
-        compare(maxAFormat, maxBFormat) || // Format B
-        compare(aSize[0], bSize[0]) || // Thickness
-        compare(aSize[1], bSize[1]) || // Size A
-        compare(aSize[2], bSize[2]) || // Size B
-        compare(a.piecesCount, b.piecesCount) // Pieces in pack
-      )
-    })
-  },
+//       return (
+//         compare(minAFormat, minBFormat) || // Format A
+//         compare(maxAFormat, maxBFormat) || // Format B
+//         compare(aSize[0], bSize[0]) || // Thickness
+//         compare(aSize[1], bSize[1]) || // Size A
+//         compare(aSize[2], bSize[2]) || // Size B
+//         compare(a.piecesCount, b.piecesCount) // Pieces in pack
+//       )
+//     })
+//   },
 
-  bytruckandsize(products: Product[]) {
-    return [...products].sort((a, b) => {
-      const aSize = parseSize(a.title)
-      const bSize = parseSize(b.title)
+//   bytruckandsize(products: Product[]) {
+//     return [...products].sort((a, b) => {
+//       const aSize = parseSize(a.title)
+//       const bSize = parseSize(b.title)
 
-      return (
-        compare(a.truckNum, b.truckNum) || // Truck number
-        compare(aSize[0], bSize[0]) || // Thickness
-        compare(aSize[1], bSize[1]) || // Size A
-        compare(aSize[2], bSize[2]) || // Size B
-        compare(a.piecesCount, b.piecesCount) // Pieces in pack
-      )
-    })
-  },
+//       return (
+//         compare(a.truckNum, b.truckNum) || // Truck number
+//         compare(aSize[0], bSize[0]) || // Thickness
+//         compare(aSize[1], bSize[1]) || // Size A
+//         compare(aSize[2], bSize[2]) || // Size B
+//         compare(a.piecesCount, b.piecesCount) // Pieces in pack
+//       )
+//     })
+//   },
 
-  bytruckandformat(products: Product[]) {
-    return [...products].sort((a, b) => {
-      const aSize = parseSize(a.title)
-      const bSize = parseSize(b.title)
+//   bytruckandformat(products: Product[]) {
+//     return [...products].sort((a, b) => {
+//       const aSize = parseSize(a.title)
+//       const bSize = parseSize(b.title)
 
-      const aFormat = parseFormat(aSize)
-      const bFormat = parseFormat(bSize)
+//       const aFormat = parseFormat(aSize)
+//       const bFormat = parseFormat(bSize)
 
-      const minAFormat = Math.min(aFormat[1], aFormat[2])
-      const minBFormat = Math.min(bFormat[1], bFormat[2])
+//       const minAFormat = Math.min(aFormat[1], aFormat[2])
+//       const minBFormat = Math.min(bFormat[1], bFormat[2])
 
-      const maxAFormat = Math.max(aFormat[1], aFormat[2])
-      const maxBFormat = Math.max(bFormat[1], bFormat[2])
+//       const maxAFormat = Math.max(aFormat[1], aFormat[2])
+//       const maxBFormat = Math.max(bFormat[1], bFormat[2])
 
-      return (
-        compare(a.truckNum, b.truckNum) || // Truck number
-        compare(minAFormat, minBFormat) || // Format A
-        compare(maxAFormat, maxBFormat) || // Format B
-        compare(aSize[0], bSize[0]) || // Thickness
-        compare(aSize[1], bSize[1]) || // Size A
-        compare(aSize[2], bSize[2]) || // Size B
-        compare(a.piecesCount, b.piecesCount) // Pieces in pack
-      )
-    })
-  },
-}
+//       return (
+//         compare(a.truckNum, b.truckNum) || // Truck number
+//         compare(minAFormat, minBFormat) || // Format A
+//         compare(maxAFormat, maxBFormat) || // Format B
+//         compare(aSize[0], bSize[0]) || // Thickness
+//         compare(aSize[1], bSize[1]) || // Size A
+//         compare(aSize[2], bSize[2]) || // Size B
+//         compare(a.piecesCount, b.piecesCount) // Pieces in pack
+//       )
+//     })
+//   },
+// }

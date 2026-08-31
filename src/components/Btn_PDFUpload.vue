@@ -1,358 +1,341 @@
 <script setup lang="ts">
-import type { Product } from '@/types/shared_types'
-import { productsSchema } from '@/types/shared_types'
-import { useProductStore } from '@/stores/products_store'
-import { correctText, calcWeight } from '@/exports/shared_script'
-import { ref } from 'vue'
-import * as pdfjsLib from 'pdfjs-dist'
-import 'pdfjs-dist/build/pdf.worker.min.mjs'
+import type { Product } from '@/types/shared_types';
+import { useProductStore } from '@/stores/products_store';
+import { correctText, combineRegex } from '@/exports/shared_script';
+import { ref } from 'vue';
+import * as pdfjsLib from 'pdfjs-dist';
+import 'pdfjs-dist/build/pdf.worker.min.mjs';
 
-const productStore = useProductStore()
-const fileInput = ref<HTMLInputElement | null>(null)
+const productStore = useProductStore();
+const fileInput = ref<HTMLInputElement | null>(null);
 
-const LFregex = new RegExp(/LF\d\d M\d{6}/i)
-const STregex = new RegExp(/DR[ _]\d+[ _]PO/i)
+const PZ_regex = new RegExp(/Przyjęcie do magazynu - \d\d-PZ \d{4}\w{2,}\.pdf/i);
+const LF_regex = new RegExp(/LF\d\d M\d{6}/i);
+const ST_regex = new RegExp(/DR[ _]\d+[ _]PO/i);
 
 function openFile() {
-  fileInput.value?.click()
+	fileInput.value?.click();
 }
 
 async function doit(event: Event): Promise<void> {
-  const target = event.target as HTMLInputElement
-  const pdfFilesList = target.files as FileList
-  const validFilesList = await validateFiles(pdfFilesList)
-  const products = await processFiles(validFilesList)
+	const target = event.target as HTMLInputElement;
+	const pdfFilesList = target.files as FileList;
+	const validFilesList = await validateFiles(pdfFilesList);
+	const products = await processFiles(validFilesList);
 
-  productStore.searchQuery = ''
-  products.forEach((item) => productStore.addProduct(item))
+	productStore.searchQuery = '';
+	products.forEach(item => productStore.addProduct(item));
 }
 
 async function validateFiles(fileList: FileList): Promise<File[]> {
-  const skippedFiles: string[] = []
-  const validFiles: File[] = []
+	const skippedFiles: string[] = [];
+	const validFiles: File[] = [];
 
-  for (const file of fileList) {
-    const isPdf = file.type === 'application/pdf'
+	for (const file of fileList) {
+		const isPdf = file.type === 'application/pdf';
 
-    const validPatterns = [LFregex, STregex]
-    const hasValidName = validPatterns.some((pattern) => pattern.test(file.name))
+		const validPatterns = [PZ_regex, LF_regex];
+		const hasValidName = validPatterns.some(pattern => pattern.test(file.name));
 
-    if (isPdf && hasValidName) {
-      validFiles.push(file)
-      continue
-    }
+		if (isPdf && hasValidName) {
+			validFiles.push(file);
+			continue;
+		}
 
-    const isJson = file.type === 'application/json' || file.name.toLowerCase().endsWith('.json')
+		skippedFiles.push(file.name);
+	}
 
-    if (isJson) {
-      try {
-        const data: unknown = JSON.parse(await file.text())
+	if (skippedFiles.length > 0) {
+		console.log(`Pominięte pliki (${skippedFiles.length}):\n\n` + skippedFiles.join('\n'));
+	}
 
-        if (productsSchema.safeParse(data).success) {
-          validFiles.push(file)
-        } else {
-          skippedFiles.push(file.name)
-        }
-      } catch {
-        skippedFiles.push(file.name)
-      }
-
-      continue
-    }
-
-    skippedFiles.push(file.name)
-  }
-
-  if (skippedFiles.length > 0) {
-    console.log(`Pominięte pliki (${skippedFiles.length}):\n\n` + skippedFiles.join('\n'))
-  }
-
-  return validFiles
+	return validFiles;
 }
 
 async function processFiles(fileList: File[]) {
-  let result: Product[] = []
+	let result: Product[] = [];
 
-  for (const file of fileList) {
-    const isJson = file.type === 'application/json' || file.name.toLowerCase().endsWith('.json')
+	for (const file of fileList) {
+		const TEXTrows = await PDFtoTEXT(file);
 
-    if (isJson) {
-      const products: Product[] = JSON.parse(await file.text())
-      result.push(...products)
-      continue
-    }
+		if (LF_regex.test(file.name)) {
+			result.push(...getLatvijasProducts(TEXTrows));
+			continue;
+		}
 
-    const TEXTrows = await PDFtoTEXT(file)
+		// if (ST_regex.test(file.name)) {
+		//   result.push(...getStigaProducts(TEXTrows))
+		// }
+	}
 
-    if (LFregex.test(file.name)) {
-      result.push(...getLatvijasProducts(TEXTrows))
-      continue
-    }
-
-    if (STregex.test(file.name)) {
-      result.push(...getStigaProducts(TEXTrows))
-    }
-  }
-
-  return result
+	return result;
 }
 
 async function PDFtoTEXT(file: File): Promise<string[]> {
-  let TEXTrows: string[] = []
+	let TEXTrows: string[] = [];
 
-  const pdf = await pdfjsLib.getDocument({
-    data: await file.arrayBuffer(),
-  }).promise
+	const pdf = await pdfjsLib.getDocument({
+		data: await file.arrayBuffer(),
+	}).promise;
 
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const TOLERANCE = 3
-    const page = await pdf.getPage(pageNum)
-    const { items } = await page.getTextContent()
-    const rows: {
-      y: number
-      items: { text: string; x: number }[]
-    }[] = []
+	for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+		const TOLERANCE = 3;
+		const page = await pdf.getPage(pageNum);
+		const { items } = await page.getTextContent();
+		const rows: {
+			y: number;
+			items: { text: string; x: number }[];
+		}[] = [];
 
-    for (const item of items) {
-      if (!('str' in item)) continue
+		for (const item of items) {
+			if (!('str' in item)) continue;
 
-      const [, , , , x, y] = item.transform
+			const [, , , , x, y] = item.transform;
 
-      let row = rows.find((r) => Math.abs(r.y - y) <= TOLERANCE)
+			let row = rows.find(r => Math.abs(r.y - y) <= TOLERANCE);
 
-      if (!row) {
-        row = { y, items: [] }
-        rows.push(row)
-      }
+			if (!row) {
+				row = { y, items: [] };
+				rows.push(row);
+			}
 
-      row.items.push({ text: item.str, x })
-    }
+			row.items.push({ text: item.str, x });
+		}
 
-    rows.sort((a, b) => b.y - a.y)
+		rows.sort((a, b) => b.y - a.y);
 
-    for (const row of rows) {
-      // const textrow = row.items
-      //   .sort((a, b) => a.x - b.x)
-      //   .map((item) => correctText(item.text))
-      //   .join('')
+		for (const row of rows) {
+			// const textrow = row.items
+			//   .sort((a, b) => a.x - b.x)
+			//   .map((item) => correctText(item.text))
+			//   .join('')
 
-      const CHAR_WIDTH = 6
-      let currentColumn = 0
-      const textrow = row.items
-        .sort((a, b) => a.x - b.x)
-        .map((item) => {
-          const text = correctText(item.text)
-          const column = Math.round(item.x / CHAR_WIDTH)
-          const spaces = Math.max(0, column - currentColumn)
+			const CHAR_WIDTH = 6;
+			let currentColumn = 0;
+			const textrow = row.items
+				.sort((a, b) => a.x - b.x)
+				.map(item => {
+					const text = correctText(item.text);
+					const column = Math.round(item.x / CHAR_WIDTH);
+					const spaces = Math.max(0, column - currentColumn);
 
-          currentColumn = column + text.length
-          return ' '.repeat(spaces) + text
-        })
-        .join('')
+					currentColumn = column + text.length;
+					return ' '.repeat(spaces) + text;
+				})
+				.join('');
 
-      TEXTrows.push(textrow)
-    } // END row
-  } // END page
+			TEXTrows.push(textrow);
+		} // END row
+	} // END page
 
-  // console.log(TEXTrows.join('\n'))
-  return TEXTrows
+	console.log(TEXTrows.join('\n'));
+	return TEXTrows;
 }
 
 function getLatvijasProducts(TEXTrows: string[]): Product[] {
-  const results: Product[] = []
+	const results: Product[] = [];
 
-  const sizeT_re = String.raw`(\d{1,2}(?:[,.]\d)?)` // Capture group
-  const sizeA_re = String.raw`(\d{3,4})` // Capture group
-  const sizeB_re = String.raw`(\d{3,4})` // Capture group
-  const packsQty_re = String.raw`(\d{1,2})` // Capture group
-  const pcsQty_re = String.raw`(\d{1,3})` // Capture group
-  const full_regexp = new RegExp(String.raw`${sizeT_re}x${sizeA_re}x${sizeB_re} mm\s+${packsQty_re}x${pcsQty_re}`, 'i')
+	const sizeT_re = /(\d{1,2}(?:[,.]\d)?)x/;
+	const sizeA_re = /(\d{3,4})x/;
+	const sizeB_re = /(\d{3,4}) mm\s+/;
+	const packing_re = /(\d{1,2}x\d{1,3})\s+/;
+	const weight_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
+	const weightUnit_re = /(cbm|sqr|pcs)/;
+	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, weight_re, weightUnit_re), 'i');
 
-  let idNum = ''
-  let idCounter = 0
-  let unknownInvoiceCounter = 0
-  let itemSize = ''
-  let itemFace = ''
-  let itemGlue = ''
-  let itemWeight = 0
-  let itemPiecesCount = 0
-  let itemPacksCount = 1
-  const arrivalPlace = getArrivalPlace(TEXTrows)
-  const invoiceNum = getInvoiceNum(TEXTrows)
-  const truckNum = getTruckNum(TEXTrows)
-  const CMRNum = getCMRNum(TEXTrows)
+	let idNum = '';
+	let idCounter = 0;
+	let itemFace = '';
+	let itemColor = '';
+	let sourceText = '';
+	const arrivalPlace = getArrivalPlace(TEXTrows);
+	const invoiceNum = getInvoiceNum(TEXTrows);
+	const truckNum = getTruckNum(TEXTrows);
+	const CMRNum = getCMRNum(TEXTrows);
 
-  TEXTrows.forEach((textrow) => {
-    if (/441233[0-9]{2}/.test(textrow)) {
-      itemGlue = textrow.match(/MR|WD|INT|EXT/i)?.[0] ?? ''
-      itemFace = textrow
-        .replace(/Birch plywood RIGA |PLY|TEX|FORM|MEL|/gi, '')
-        .replace(/, edges sealed .*|,[^,]*441233[0-9]{2}.*/gi, '')
-        .replace(/ \(without \*\)/gi, '') // Peri without *
-        .replace(/ Bouleau/gi, '') // Ultibat Bouleau
-        .replace(/(\w) (I)/g, '$1 $2')
-        .replace(/,/i, ' ')
-        .trim()
-    }
+	TEXTrows.forEach(textrow => {
+		if (/441233[0-9]{2}/.test(textrow)) {
+			sourceText += textrow;
+			// itemGlue = textrow.match(/MR|WD|INT|EXT/i)?.[0] ?? ''
+			itemFace = textrow
+				.replace(/Birch plywood RIGA |PLY|TEX|FORM|MEL|/gi, '')
+				.replace(/, edges sealed .*|,[^,]*441233[0-9]{2}.*/gi, '')
+				.replace(/ \(without \*\)/gi, '') // Peri without *
+				.replace(/ Bouleau/gi, '') // Ultibat Bouleau
+				.replace(/(\w) (I)/g, '$1 $2')
+				.replace(/,/i, ' ')
+				.trim();
+		}
 
-    const [, sizeT, sizeA, sizeB, packsQty, pcsQty] = textrow.match(full_regexp) ?? []
+		const [, itemSizeT, itemSizeA, itemSizeB, itemPacking, itemWeight, itemWeightUnit] = textrow.match(full_regexp) ?? [];
 
-    if (sizeT && sizeA && sizeB && packsQty && pcsQty) {
-      idNum = `${invoiceNum || '_id'}_${(++idCounter).toString().padStart(3, '0')}`
-      itemSize = `${sizeT}x${sizeA}x${sizeB}`
-      itemWeight = calcWeight(`${itemSize} ${itemFace}`, +pcsQty || 0)
-      itemPacksCount = Number(packsQty) ?? 0
-      itemPiecesCount = Number(pcsQty) ?? 0
+		if (itemSizeT && itemSizeA && itemSizeB && itemPacking && itemWeight && itemWeightUnit) {
+			idNum = `${invoiceNum || '_id'}_${(++idCounter).toString().padStart(3, '0')}`;
+			sourceText += textrow;
 
-      results.push({
-        id: idNum,
-        timestamp: Date.now(),
-        title: itemSize,
-        desc: itemFace,
-        note: invoiceNum,
-        glue: itemGlue || `${itemWeight.toFixed(0)} kg`,
-        weight: itemWeight,
-        packsCount: itemPacksCount,
-        piecesCount: itemPiecesCount,
-        arrivalPlace: arrivalPlace,
-        truckNum: truckNum,
-        cmrNum: CMRNum,
-      })
-    }
-  })
-  return results
+			results.push({
+				id: idNum,
+				cmrNum: CMRNum,
+				truckNum: truckNum,
+				timestamp: Date.now(),
+				arrivalPlace: arrivalPlace,
+				INV: {
+					sourcetxt: sourceText.replace(/\s{2,}/, '').trim(),
+					sizeT: Number(itemSizeT.replace(/,/, '.')),
+					sizeA: Number(itemSizeA),
+					sizeB: Number(itemSizeB),
+					face: itemFace,
+					color: '',
+					packing: itemPacking,
+					weight: itemWeight,
+					weightUnit: itemWeightUnit,
+				},
+			});
+		}
+	});
+
+	console.log(results);
+	return results;
 }
 
-function getStigaProducts(TEXTrows: string[]): Product[] {
-  const results: Product[] = []
+// function getStigaProducts(TEXTrows: string[]): Product[] {
+//   const results: Product[] = []
 
-  const id_re = String.raw`\d{1,2}`
-  const sizeA_re = String.raw`(\d{3,4})` // Capture group
-  const sizeB_re = String.raw`(\d{3,4})` // Capture group
-  const sizeT_re = String.raw`(\d{1,2}(?:[,.]\d)?)` // Capture group
-  const face_re = String.raw`((?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?\/(?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?(?: Sanded)?)` // Capture group
-  const pcsQty_re = String.raw`(\d{1,3})` // Capture group
-  const packsQty_re = String.raw`(\d{1,2})` // Capture group
-  const full_regexp = new RegExp(
-    String.raw`${id_re}\s+${sizeA_re}\s+${sizeB_re}\s+${sizeT_re}\s+${face_re}\s+${pcsQty_re}\s+${packsQty_re}`,
-    'i',
-  )
+//   const id_re = String.raw`\d{1,2}`
+//   const sizeA_re = String.raw`(\d{3,4})` // Capture group
+//   const sizeB_re = String.raw`(\d{3,4})` // Capture group
+//   const sizeT_re = String.raw`(\d{1,2}(?:[,.]\d)?)` // Capture group
+//   const face_re = String.raw`((?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?\/(?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?(?: Sanded)?)` // Capture group
+//   const pcsQty_re = String.raw`(\d{1,3})` // Capture group
+//   const packsQty_re = String.raw`(\d{1,2})` // Capture group
+//   const full_regexp = new RegExp(
+//     String.raw`${id_re}\s+${sizeA_re}\s+${sizeB_re}\s+${sizeT_re}\s+${face_re}\s+${pcsQty_re}\s+${packsQty_re}`,
+//     'i',
+//   )
 
-  let idNum = ''
-  let idCounter = 0
-  let itemSize = ''
-  let itemFace = ''
-  let itemGlue = ''
-  let itemWeight = 0
-  let itemPiecesCount = 0
-  let itemPacksCount = 1
-  const arrivalPlace = getArrivalPlace(TEXTrows)
-  const invoiceNum = getInvoiceNum(TEXTrows)
-  const truckNum = invoiceNum
-  const CMRNum = invoiceNum
+//   let idNum = ''
+//   let idCounter = 0
+//   let itemSize = ''
+//   let itemFace = ''
+//   let itemGlue = ''
+//   let itemWeight = 0
+//   let itemPiecesCount = 0
+//   let itemPacksCount = 1
+//   const arrivalPlace = getArrivalPlace(TEXTrows)
+//   const invoiceNum = getInvoiceNum(TEXTrows)
+//   const truckNum = invoiceNum
+//   const CMRNum = invoiceNum
 
-  TEXTrows.forEach((textrow, i) => {
-    const sanded = textrow.match(/^C\/C$/i)
-    let fixedrow = ''
+//   TEXTrows.forEach((textrow, i) => {
+//     const sanded = textrow.match(/^C\/C$/i)
+//     let fixedrow = ''
 
-    if (sanded) {
-      const words = TEXTrows[i + 1]!.split(' ')
-      words.splice(4, 0, `${TEXTrows[i]?.trim()} ${TEXTrows[i + 2]?.trim()}`)
-      fixedrow = words.join(' ')
-    }
+//     if (sanded) {
+//       const words = TEXTrows[i + 1]!.split(' ')
+//       words.splice(4, 0, `${TEXTrows[i]?.trim()} ${TEXTrows[i + 2]?.trim()}`)
+//       fixedrow = words.join(' ')
+//     }
 
-    const [id, sizeA, sizeB, sizeT, face, pcsQty, packsQty] = (fixedrow || textrow).match(full_regexp) ?? []
+//     const [id, sizeA, sizeB, sizeT, face, pcsQty, packsQty] = (fixedrow || textrow).match(full_regexp) ?? []
 
-    if (id && sizeA && sizeB && sizeT && face && pcsQty && packsQty) {
-      idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`
-      itemSize = `${sizeT}x${sizeA}x${sizeB}`
-      itemFace = face ?? ''
-      itemGlue = 'WD'
-      itemWeight = calcWeight(`${itemSize} ${itemFace}`, +pcsQty || 0)
-      itemPacksCount = Number(packsQty) ?? 0
-      itemPiecesCount = Number(pcsQty) ?? 0
+//     if (id && sizeA && sizeB && sizeT && face && pcsQty && packsQty) {
+//       idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`
+//       itemSize = `${sizeT}x${sizeA}x${sizeB}`
+//       itemFace = face ?? ''
+//       itemGlue = 'WD'
+//       itemWeight = calcWeight(`${itemSize} ${itemFace}`, +pcsQty || 0)
+//       itemPacksCount = Number(packsQty) ?? 0
+//       itemPiecesCount = Number(pcsQty) ?? 0
 
-      results.push({
-        id: idNum,
-        timestamp: Date.now(),
-        title: itemSize,
-        desc: itemFace,
-        note: invoiceNum,
-        glue: itemGlue || `${itemWeight.toFixed(0)} kg`,
-        weight: itemWeight,
-        packsCount: itemPacksCount,
-        piecesCount: itemPiecesCount,
-        arrivalPlace: arrivalPlace,
-        truckNum: truckNum,
-        cmrNum: CMRNum,
-      })
-    }
-  })
+//       // results.push({
+//         // id: idNum,
+//         // timestamp: Date.now(),
+//         // title: itemSize,
+//         // desc: itemFace,
+//         // note: invoiceNum,
+//         // glue: itemGlue || `${itemWeight.toFixed(0)} kg`,
+//         // weight: itemWeight,
+//         // packsCount: itemPacksCount,
+//         // piecesCount: itemPiecesCount,
+//         // arrivalPlace: arrivalPlace,
+//         // truckNum: truckNum,
+//         // cmrNum: CMRNum,
+//       // })
+//     }
+//   })
 
-  // console.log(results)
-  return results
-}
+//   // console.log(results)
+//   return results
+// }
 
 function getArrivalPlace(text_rows: string[]): string {
-  let result = ''
-  text_rows.forEach((textrow, i) => {
-    const LF = textrow.includes('Terms of delivery:') ? textrow.replace('Terms of delivery:', '').trim() : ''
-    const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow) ? textrow.replace(/100\s*%\s*Prepayment/i, '').trim() : ''
+	let result = '';
+	text_rows.forEach((textrow, i) => {
+		const LF = textrow.includes('Terms of delivery:') ? textrow.replace('Terms of delivery:', '').trim() : '';
+		const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow) ? textrow.replace(/100\s*%\s*Prepayment/i, '').trim() : '';
 
-    if (LF) result = LF
-    if (ST) result = ST
-  })
-  return result
+		if (LF) result = LF;
+		if (ST) result = ST;
+	});
+	return result;
 }
 
 function getInvoiceNum(text_rows: string[]): string {
-  let result = ''
-  text_rows.forEach((textrow, i) => {
-    const LF = textrow.match(/LF[0-9]{2} M[0-9]{6}/i)
-    const ST = textrow.match(/DR[0-9]+/i)
+	let result = '';
+	text_rows.forEach((textrow, i) => {
+		const LF = textrow.match(/LF[0-9]{2} M[0-9]{6}/i);
+		const ST = textrow.match(/DR[0-9]+/i);
 
-    if (LF) result = LF[0]
-    if (ST) result = ST[0]
-  })
-  return result
+		if (LF) result = LF[0];
+		if (ST) result = ST[0];
+	});
+	return result;
 }
 
 function getTruckNum(text_rows: string[]): string {
-  let result = ''
-  text_rows.forEach((textrow, i) => {
-    if (textrow.includes('Carriage by:')) {
-      result = textrow.replace('Carriage by:', '').trim()
-      return
-    }
-  })
-  return result
+	let result = '';
+	text_rows.forEach((textrow, i) => {
+		if (textrow.includes('Carriage by:')) {
+			result = textrow.replace('Carriage by:', '').trim();
+			return;
+		}
+	});
+	return result;
 }
 
 function getCMRNum(text_rows: string[]): string {
-  let result = ''
-  text_rows.forEach((textrow, i) => {
-    const match = textrow.match(/CMR_[A-Z]{1}[0-9]{6}/i)
-    if (match) {
-      result = match[0]
-      return
-    }
-  })
-  return result
+	let result = '';
+	text_rows.forEach((textrow, i) => {
+		const match = textrow.match(/CMR_[A-Z]{1}[0-9]{6}/i);
+		if (match) {
+			result = match[0];
+			return;
+		}
+	});
+	return result;
 }
 </script>
 
 <template>
-  <button class="btn-primary" type="button" @click="openFile">
-    <slot>Dodaj z faktury</slot>
-    <input ref="fileInput" type="file" multiple hidden @change="doit" />
-  </button>
+	<button
+		class="btn-primary"
+		type="button"
+		@click="openFile">
+		<slot>Dodaj PDF</slot>
+		<input
+			ref="fileInput"
+			type="file"
+			multiple
+			hidden
+			@change="doit" />
+	</button>
 </template>
 
 <style scoped>
 input[type='file'] {
-  display: none;
+	display: none;
 }
 label[for='PDFupload-button'] {
-  cursor: pointer;
+	cursor: pointer;
 }
 </style>
