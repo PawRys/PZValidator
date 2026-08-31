@@ -7,7 +7,7 @@ export interface Product {
 	truckNum?: string;
 	arrivalPlace?: string;
 	PZ?: ProductData;
-	INV?: ProductData;
+	INVOICE?: ProductData;
 }
 
 export interface ProductData {

@@ -238,7 +238,7 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 				packing: itemPacking,
 				truckNum: truckNum,
 				arrivalPlace: arrivalPlace,
-				INV: {
+				INVOICE: {
 					sourcetxt: `${sourceTextOne} ${sourceTextTwo}`.replace(/\s{2,}/g, ' ').trim(),
 					sizeT: Number(itemSizeT.replace(/,/, '.')),
 					sizeA: Number(itemSizeA),
