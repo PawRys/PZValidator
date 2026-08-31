@@ -1,0 +1,123 @@
+:root {
+  --accent-050: #fff8e6;
+  --accent-100: #ffedbf;
+  --accent-200: #ffdb80;
+  --accent-300: #ffc94d;
+  --accent-400: #ffb91a;
+  --accent-500: #ffa500;
+  --accent-600: #e69500;
+  --accent-700: #cc8500;
+  --accent-800: #a86d00;
+  --accent-900: #805200;
+  --accent-950: #4d3100;
+
+  --neutral-000: #ffffff;
+  --neutral-050: #f8f9fb;
+  --neutral-100: #f1f3f6;
+  --neutral-200: #e3e6eb;
+  --neutral-300: #d1d5dc;
+  --neutral-400: #aeb4be;
+  --neutral-500: #858c98;
+  --neutral-600: #656c78;
+  --neutral-700: #484f5b;
+  --neutral-800: #303640;
+  --neutral-900: #1f252e;
+  --neutral-950: #11161d;
+
+  /* --neutral-000: #ffffff; */
+  /* --neutral-050: #fcfaf7; */
+  /* --neutral-100: #f7f4ee; */
+  /* --neutral-200: #ebe6dc; */
+  /* --neutral-300: #d9d2c5; */
+  /* --neutral-400: #b8afa0; */
+  /* --neutral-500: #928878; */
+  /* --neutral-600: #706759; */
+  /* --neutral-700: #514a40; */
+  /* --neutral-800: #37322c; */
+  /* --neutral-900: #25221e; */
+  /* --neutral-950: #15130f; */
+
+  --main-bg-color: var(--neutral-050);
+  --main-font-color: var(--neutral-950);
+
+  --button-bg-color: var(--neutral-100);
+  --button-font-color: var(--main-font-color);
+  --button-border-color: var(--neutral-400);
+  --button-bg-color-hover: var(--neutral-050);
+
+  --input-bg-color: var(--neutral-000);
+  --input-font-color: var(--main-font-color);
+  --input-border-color: var(--neutral-400);
+  --input-bg-color-selected: var(--accent-050);
+  --input-font-color-selected: var(--main-font-color);
+
+  /* Font */
+  /* --font-family: 'Rajdhani', sans-serif; */
+
+  /* General */
+  /* --bg-color: #fafafa; */
+  /* --font-color: #000; */
+  /* --font-color-faint: #666; */
+
+  /* Input / Select */
+  /* --input-bg-color: #fff; */
+  /* --input-border-color: #ccc; */
+  /* --input-focus-color: var(--accent-color); */
+
+  /* --placeholder-color: #999; */
+
+  /* Select */
+  /* --option-bg-color: #fff; */
+  /* --option-color: #000; */
+  /* --option-selected-bg-color: #f0f0f0; */
+  /* --option-selected-color: #000; */
+
+  /* Button */
+  /* --button-bg-color: #f0f0f0; */
+  /* --button-hover-bg-color: #e5e5e5; */
+  /* --button-border-color: #ccc; */
+
+  /* Accent */
+  /* --accent-color: #2563eb; */
+  /* --accent-color-hover: #1d4ed8; */
+
+  /* Status */
+  /* --success-color: #16a34a; */
+  /* --warning-color: #d97706; */
+  /* --error-color: #dc2626; */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* General */
+    /* --bg-color: #303030; */
+    /* --font-color: #fff; */
+    /* --font-color-faint: #999; */
+
+    /* Input / Select */
+    /* --input-bg-color: #707070; */
+    /* --input-border-color: #888; */
+
+    /* --placeholder-color: #aaa; */
+
+    /* Select */
+    /* --option-bg-color: #707070; */
+    /* --option-color: #fff; */
+    /* --option-selected-bg-color: #505050; */
+    /* --option-selected-color: #fff; */
+
+    /* Button */
+    /* --button-bg-color: #505050; */
+    /* --button-hover-bg-color: #606060; */
+    /* --button-border-color: #666; */
+
+    /* Accent */
+    /* --accent-color: #60a5fa; */
+    /* --accent-color-hover: #93c5fd; */
+
+    /* Status */
+    /* --success-color: #4ade80; */
+    /* --warning-color: #fbbf24; */
+    /* --error-color: #f87171; */
+  }
+}
