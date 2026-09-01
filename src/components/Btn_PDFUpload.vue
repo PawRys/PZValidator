@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Product } from '@/types/shared_types';
+import type { Product, ProductData, ProductDiff } from '@/types/shared_types';
 import { useProductStore } from '@/stores/products_store';
 import { correctText, combineRegex } from '@/exports/shared_script';
 import { ref } from 'vue';
@@ -23,7 +23,11 @@ async function doit(event: Event): Promise<void> {
 	const validFilesList = await validateFiles(pdfFilesList);
 	const unmergedProducts = await processFiles(validFilesList);
 	const mergedProducts = mergeProducts(unmergedProducts);
-	console.log(mergedProducts);
+	const differs = findDiffers(mergedProducts);
+
+	differs.forEach(item => useProductStore().addProduct(item));
+
+	console.log(differs);
 }
 
 async function validateFiles(fileList: FileList): Promise<File[]> {
@@ -132,7 +136,8 @@ async function PDFtoTEXT(file: File): Promise<string[]> {
 		} // END row
 	} // END page
 
-	console.log(TEXTrows.join('\n'));
+	// console.log(TEXTrows.join('\n'));
+
 	return TEXTrows;
 }
 
@@ -168,7 +173,7 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 			results.push({
 				id: idNum,
 				PZnum: PZnum,
-				invoiceNum: idNum,
+				invoiceNum: invoiceNum,
 				timestamp: Date.now(),
 				PZ: {
 					sourcetxt: `${sourceTextOne}`.replace(/\s{2,}/g, ' ').trim(),
@@ -215,6 +220,14 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 		if (/441233[0-9]{2}/.test(textrow)) {
 			sourceTextOne = textrow;
 			// itemGlue = textrow.match(/MR|WD|INT|EXT/i)?.[0] ?? ''
+			itemFace = textrow
+				.replace(/Birch plywood RIGA |PLY|TEX|FORM|MEL|/gi, '')
+				.replace(/, edges sealed .*|,[^,]*441233[0-9]{2}.*/gi, '')
+				.replace(/ \(without \*\)/gi, '') // Peri without *
+				.replace(/ Bouleau/gi, '') // Ultibat Bouleau
+				.replace(/(\w) (I)/g, '$1 $2')
+				.replace(/,/i, ' ')
+				.trim();
 			itemFace = getFaceType(textrow);
 			itemColor = getColor(textrow, itemFace);
 		}
@@ -250,78 +263,85 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	return results;
 }
 
-// function getStigaProducts(TEXTrows: string[]): Product[] {
-//   const results: Product[] = []
+function getStigaProducts(TEXTrows: string[]): Product[] {
+	const results: Product[] = [];
+	//   const id_re = String.raw`\d{1,2}`
+	//   const sizeA_re = String.raw`(\d{3,4})` // Capture group
+	//   const sizeB_re = String.raw`(\d{3,4})` // Capture group
+	//   const sizeT_re = String.raw`(\d{1,2}(?:[,.]\d)?)` // Capture group
+	//   const face_re = String.raw`((?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?\/(?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?(?: Sanded)?)` // Capture group
+	//   const pcsQty_re = String.raw`(\d{1,3})` // Capture group
+	//   const packsQty_re = String.raw`(\d{1,2})` // Capture group
+	//   const full_regexp = new RegExp(
+	//     String.raw`${id_re}\s+${sizeA_re}\s+${sizeB_re}\s+${sizeT_re}\s+${face_re}\s+${pcsQty_re}\s+${packsQty_re}`,
+	//     'i',
+	//   )
+	//   let idNum = ''
+	//   let idCounter = 0
+	//   let itemSize = ''
+	//   let itemFace = ''
+	//   let itemGlue = ''
+	//   let itemWeight = 0
+	//   let itemPiecesCount = 0
+	//   let itemPacksCount = 1
+	//   const arrivalPlace = getArrivalPlace(TEXTrows)
+	//   const invoiceNum = getInvoiceNum(TEXTrows)
+	//   const truckNum = invoiceNum
+	//   const CMRNum = invoiceNum
+	//   TEXTrows.forEach((textrow, i) => {
+	//     const sanded = textrow.match(/^C\/C$/i)
+	//     let fixedrow = ''
+	//     if (sanded) {
+	//       const words = TEXTrows[i + 1]!.split(' ')
+	//       words.splice(4, 0, `${TEXTrows[i]?.trim()} ${TEXTrows[i + 2]?.trim()}`)
+	//       fixedrow = words.join(' ')
+	//     }
+	//     const [id, sizeA, sizeB, sizeT, face, pcsQty, packsQty] = (fixedrow || textrow).match(full_regexp) ?? []
+	//     if (id && sizeA && sizeB && sizeT && face && pcsQty && packsQty) {
+	//       idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`
+	//       itemSize = `${sizeT}x${sizeA}x${sizeB}`
+	//       itemFace = face ?? ''
+	//       itemGlue = 'WD'
+	//       itemWeight = calcWeight(`${itemSize} ${itemFace}`, +pcsQty || 0)
+	//       itemPacksCount = Number(packsQty) ?? 0
+	//       itemPiecesCount = Number(pcsQty) ?? 0
+	//       // results.push({
+	//         // id: idNum,
+	//         // timestamp: Date.now(),
+	//         // title: itemSize,
+	//         // desc: itemFace,
+	//         // note: invoiceNum,
+	//         // glue: itemGlue || `${itemWeight.toFixed(0)} kg`,
+	//         // weight: itemWeight,
+	//         // packsCount: itemPacksCount,
+	//         // piecesCount: itemPiecesCount,
+	//         // arrivalPlace: arrivalPlace,
+	//         // truckNum: truckNum,
+	//         // cmrNum: CMRNum,
+	//       // })
+	//     }
+	//   })
+	//   // console.log(results)
+	return results;
+}
 
-//   const id_re = String.raw`\d{1,2}`
-//   const sizeA_re = String.raw`(\d{3,4})` // Capture group
-//   const sizeB_re = String.raw`(\d{3,4})` // Capture group
-//   const sizeT_re = String.raw`(\d{1,2}(?:[,.]\d)?)` // Capture group
-//   const face_re = String.raw`((?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?\/(?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?(?: Sanded)?)` // Capture group
-//   const pcsQty_re = String.raw`(\d{1,3})` // Capture group
-//   const packsQty_re = String.raw`(\d{1,2})` // Capture group
-//   const full_regexp = new RegExp(
-//     String.raw`${id_re}\s+${sizeA_re}\s+${sizeB_re}\s+${sizeT_re}\s+${face_re}\s+${pcsQty_re}\s+${packsQty_re}`,
-//     'i',
-//   )
+function findDiffers(products: Product[]): Product[] {
+	products.forEach(product => {
+		const differs: ProductDiff = {};
+		if (product.INV?.sizeT !== product.PZ?.sizeT) differs.sizeT = [product.INV?.sizeT, product.PZ?.sizeT];
+		if (product.INV?.sizeA !== product.PZ?.sizeA) differs.sizeA = [product.INV?.sizeA, product.PZ?.sizeA];
+		if (product.INV?.sizeB !== product.PZ?.sizeB) differs.sizeB = [product.INV?.sizeB, product.PZ?.sizeB];
+		if (product.INV?.face !== product.PZ?.face) differs.face = [product.INV?.face, product.PZ?.face];
+		if (product.INV?.color !== product.PZ?.color) differs.color = [product.INV?.color, product.PZ?.color];
+		if (product.INV?.quantity !== product.PZ?.quantity) differs.quantity = [product.INV?.quantity, product.PZ?.quantity];
+		if (product.INV?.quantityUnit !== product.PZ?.quantityUnit) differs.quantityUnit = [product.INV?.quantityUnit, product.PZ?.quantityUnit];
 
-//   let idNum = ''
-//   let idCounter = 0
-//   let itemSize = ''
-//   let itemFace = ''
-//   let itemGlue = ''
-//   let itemWeight = 0
-//   let itemPiecesCount = 0
-//   let itemPacksCount = 1
-//   const arrivalPlace = getArrivalPlace(TEXTrows)
-//   const invoiceNum = getInvoiceNum(TEXTrows)
-//   const truckNum = invoiceNum
-//   const CMRNum = invoiceNum
+		Object.assign(product, {
+			differs: differs,
+		});
+	});
 
-//   TEXTrows.forEach((textrow, i) => {
-//     const sanded = textrow.match(/^C\/C$/i)
-//     let fixedrow = ''
-
-//     if (sanded) {
-//       const words = TEXTrows[i + 1]!.split(' ')
-//       words.splice(4, 0, `${TEXTrows[i]?.trim()} ${TEXTrows[i + 2]?.trim()}`)
-//       fixedrow = words.join(' ')
-//     }
-
-//     const [id, sizeA, sizeB, sizeT, face, pcsQty, packsQty] = (fixedrow || textrow).match(full_regexp) ?? []
-
-//     if (id && sizeA && sizeB && sizeT && face && pcsQty && packsQty) {
-//       idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`
-//       itemSize = `${sizeT}x${sizeA}x${sizeB}`
-//       itemFace = face ?? ''
-//       itemGlue = 'WD'
-//       itemWeight = calcWeight(`${itemSize} ${itemFace}`, +pcsQty || 0)
-//       itemPacksCount = Number(packsQty) ?? 0
-//       itemPiecesCount = Number(pcsQty) ?? 0
-
-//       // results.push({
-//         // id: idNum,
-//         // timestamp: Date.now(),
-//         // title: itemSize,
-//         // desc: itemFace,
-//         // note: invoiceNum,
-//         // glue: itemGlue || `${itemWeight.toFixed(0)} kg`,
-//         // weight: itemWeight,
-//         // packsCount: itemPacksCount,
-//         // piecesCount: itemPiecesCount,
-//         // arrivalPlace: arrivalPlace,
-//         // truckNum: truckNum,
-//         // cmrNum: CMRNum,
-//       // })
-//     }
-//   })
-
-//   // console.log(results)
-//   return results
-// }
-
-function addScoring(products: Product[]): Product[] {
-	products.forEach(product => {});
+	return products;
 }
 
 function mergeProducts(products: Product[]): Product[] {

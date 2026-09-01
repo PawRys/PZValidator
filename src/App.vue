@@ -15,19 +15,25 @@ import { useProductStore } from '@/stores/products_store';
 		<h1>You did it!</h1>
 		<UploadPDF />
 
-		<ul v-for="product in useProductStore().products">
-			<li>
-				<span>{{ `${product.INV?.sizeT}x${product.INV?.sizeA}x${product.INV?.sizeB}mm ` }}</span>
-				<span>{{
-					`${product.INV?.face} ${product.INV?.color} ${product.INV?.quantity}${product.INV?.quantityUnit}`
-				}}</span>
-			</li>
-			<li>
-				<span>{{ `${product.PZ?.sizeT}x${product.INV?.sizeA}x${product.INV?.sizeB}mm ` }}</span>
-				<span>{{
-					`${product.PZ?.face} ${product.PZ?.color} ${product.PZ?.quantity}${product.PZ?.quantityUnit}`
-				}}</span>
-			</li>
+		<ul
+			v-for="product in useProductStore().products"
+			:key="product.id">
+			<template v-if="Object.keys(product.differs ?? {}).length > 0">
+				<li>{{ product.invoiceNum }} / {{ product.PZnum }} / {{ product.id }}</li>
+				<li>
+					<span>{{ `${product.INV?.sizeT}x${product.INV?.sizeA}x${product.INV?.sizeB}mm ` }}</span>
+					<span>{{ `${product.INV?.face} ${product.INV?.color} ${product.INV?.quantity}${product.INV?.quantityUnit}` }}</span>
+				</li>
+				<li>
+					<span>{{ `${product.PZ?.sizeT}x${product.PZ?.sizeA}x${product.PZ?.sizeB}mm ` }}</span>
+					<span>{{ `${product.PZ?.face} ${product.PZ?.color} ${product.PZ?.quantity}${product.PZ?.quantityUnit}` }}</span>
+				</li>
+				<li>
+					<span>{{ product.differs }}</span>
+				</li>
+				<li>{{ product.INV?.sourcetxt }}</li>
+				<li>{{ product.PZ?.sourcetxt }}</li>
+			</template>
 		</ul>
 	</main>
 
@@ -35,7 +41,9 @@ import { useProductStore } from '@/stores/products_store';
 		<p>Wszelkie prawa zastrzeżone - Paweł Ryszkowski</p>
 		<p>
 			Uwagi i pomoc techniczna:
-			<a href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205" target="_blank"
+			<a
+				href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205"
+				target="_blank"
 				>pawrys.kontakt@gmail.com</a
 			>
 			<span> - </span>

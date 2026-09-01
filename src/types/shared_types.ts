@@ -1,3 +1,7 @@
+export type ProductDiff = {
+	[K in keyof ProductData]?: [ProductData[K] | undefined, ProductData[K] | undefined];
+};
+
 export interface Product {
 	id: string;
 	PZnum?: string;
@@ -9,7 +13,7 @@ export interface Product {
 	timestamp: number;
 	PZ?: ProductData;
 	INV?: ProductData;
-	score?: boolean[];
+	differs?: ProductDiff;
 }
 
 export interface ProductData {
@@ -23,10 +27,4 @@ export interface ProductData {
 	quantityUnit: string;
 }
 
-export type SortFunction =
-	| 'default'
-	| 'bytime'
-	| 'bysize'
-	| 'byformat'
-	| 'bytruckandsize'
-	| 'bytruckandformat';
+export type SortFunction = 'default' | 'bytime' | 'bysize' | 'byformat' | 'bytruckandsize' | 'bytruckandformat';
