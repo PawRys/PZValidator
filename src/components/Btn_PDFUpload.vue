@@ -118,7 +118,7 @@ async function PDFtoTEXT(file: File): Promise<string[]> {
 			//   .map((item) => correctText(item.text))
 			//   .join('')
 
-			const CHAR_WIDTH = 5;
+			const CHAR_WIDTH = 4;
 			let currentColumn = 0;
 			const textrow = row.items
 				.sort((a, b) => a.x - b.x)
@@ -136,8 +136,7 @@ async function PDFtoTEXT(file: File): Promise<string[]> {
 		} // END row
 	} // END page
 
-	// console.log(TEXTrows.join('\n'));
-
+	console.log(TEXTrows.join('\n'));
 	return TEXTrows;
 }
 
@@ -150,7 +149,10 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 	const description_re = /(.+)\s{2,}/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(m3|m2|szt)/;
-	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, description_re, quantity_re, quantityUnit_re), 'i');
+	const full_regexp = new RegExp(
+		combineRegex(sizeT_re, sizeA_re, sizeB_re, description_re, quantity_re, quantityUnit_re),
+		'i',
+	);
 
 	let idNum = '';
 	let idCounter = 0;
@@ -162,7 +164,8 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 	const invoiceNum = getInvoiceNum(TEXTrows);
 
 	TEXTrows.forEach((textrow, rowIndex) => {
-		const [, itemSizeT, itemSizeA, itemSizeB, itemDescription, itemQty, itemQtyUnit] = textrow.match(full_regexp) ?? [];
+		const [, itemSizeT, itemSizeA, itemSizeB, itemDescription, itemQty, itemQtyUnit] =
+			textrow.match(full_regexp) ?? [];
 
 		if (itemSizeT && itemSizeA && itemSizeB && itemDescription && itemQty && itemQtyUnit) {
 			idNum = `${invoiceNum || '_id'}_${(++idCounter).toString().padStart(3, '0')}`;
@@ -203,7 +206,10 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	const packing_re = /(\d{1,2}x\d{1,3})\s+/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(cbm|sqr|pcs)/;
-	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, quantity_re, quantityUnit_re), 'i');
+	const full_regexp = new RegExp(
+		combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, quantity_re, quantityUnit_re),
+		'i',
+	);
 
 	let idNum = '';
 	let idCounter = 0;
@@ -220,19 +226,20 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 		if (/441233[0-9]{2}/.test(textrow)) {
 			sourceTextOne = textrow;
 			// itemGlue = textrow.match(/MR|WD|INT|EXT/i)?.[0] ?? ''
-			itemFace = textrow
+			const declutered_text = textrow
 				.replace(/Birch plywood RIGA |PLY|TEX|FORM|MEL|/gi, '')
 				.replace(/, edges sealed .*|,[^,]*441233[0-9]{2}.*/gi, '')
 				.replace(/ \(without \*\)/gi, '') // Peri without *
 				.replace(/ Bouleau/gi, '') // Ultibat Bouleau
-				.replace(/(\w) (I)/g, '$1 $2')
+				// .replace(/(\w) (I)/g, '$1 $2')
 				.replace(/,/i, ' ')
 				.trim();
-			itemFace = getFaceType(textrow);
-			itemColor = getColor(textrow, itemFace);
+			itemFace = getFaceType(declutered_text);
+			itemColor = getColor(declutered_text, itemFace);
 		}
 
-		const [, itemSizeT, itemSizeA, itemSizeB, itemPacking, itemQty, itemQtyUnit] = textrow.match(full_regexp) ?? [];
+		const [, itemSizeT, itemSizeA, itemSizeB, itemPacking, itemQty, itemQtyUnit] =
+			textrow.match(full_regexp) ?? [];
 		if (itemSizeT && itemSizeA && itemSizeB && itemPacking && itemQty && itemQtyUnit) {
 			idNum = `${invoiceNum || '_id'}_${(++idCounter).toString().padStart(3, '0')}`;
 			sourceTextTwo = textrow;
@@ -328,13 +335,21 @@ function getStigaProducts(TEXTrows: string[]): Product[] {
 function findDiffers(products: Product[]): Product[] {
 	products.forEach(product => {
 		const differs: ProductDiff = {};
-		if (product.INV?.sizeT !== product.PZ?.sizeT) differs.sizeT = [product.INV?.sizeT, product.PZ?.sizeT];
-		if (product.INV?.sizeA !== product.PZ?.sizeA) differs.sizeA = [product.INV?.sizeA, product.PZ?.sizeA];
-		if (product.INV?.sizeB !== product.PZ?.sizeB) differs.sizeB = [product.INV?.sizeB, product.PZ?.sizeB];
-		if (product.INV?.face !== product.PZ?.face) differs.face = [product.INV?.face, product.PZ?.face];
-		if (product.INV?.color !== product.PZ?.color) differs.color = [product.INV?.color, product.PZ?.color];
-		if (product.INV?.quantity !== product.PZ?.quantity) differs.quantity = [product.INV?.quantity, product.PZ?.quantity];
-		if (product.INV?.quantityUnit !== product.PZ?.quantityUnit) differs.quantityUnit = [product.INV?.quantityUnit, product.PZ?.quantityUnit];
+
+		if (product.INV?.sizeT !== product.PZ?.sizeT)
+			differs.sizeT = [product.INV?.sizeT, product.PZ?.sizeT];
+		if (product.INV?.sizeA !== product.PZ?.sizeA)
+			differs.sizeA = [product.INV?.sizeA, product.PZ?.sizeA];
+		if (product.INV?.sizeB !== product.PZ?.sizeB)
+			differs.sizeB = [product.INV?.sizeB, product.PZ?.sizeB];
+		if (product.INV?.face !== product.PZ?.face)
+			differs.face = [product.INV?.face, product.PZ?.face];
+		if (product.INV?.color !== product.PZ?.color)
+			differs.color = [product.INV?.color, product.PZ?.color];
+		if (product.INV?.quantity !== product.PZ?.quantity)
+			differs.quantity = [product.INV?.quantity, product.PZ?.quantity];
+		if (product.INV?.quantityUnit !== product.PZ?.quantityUnit)
+			differs.quantityUnit = [product.INV?.quantityUnit, product.PZ?.quantityUnit];
 
 		Object.assign(product, {
 			differs: differs,
@@ -362,8 +377,12 @@ function mergeProducts(products: Product[]): Product[] {
 function getArrivalPlace(text_rows: string[]): string {
 	let result = '';
 	text_rows.forEach((textrow, i) => {
-		const LF = textrow.includes('Terms of delivery:') ? textrow.replace('Terms of delivery:', '').trim() : '';
-		const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow) ? textrow.replace(/100\s*%\s*Prepayment/i, '').trim() : '';
+		const LF = textrow.includes('Terms of delivery:')
+			? textrow.replace('Terms of delivery:', '').trim()
+			: '';
+		const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow)
+			? textrow.replace(/100\s*%\s*Prepayment/i, '').trim()
+			: '';
 
 		if (LF) result = LF;
 		if (ST) result = ST;
@@ -494,7 +513,8 @@ function getColor(text: string, faceType: string): string {
 	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(grey|szar[ya])/gi.test(text)) results.add('grey');
 	if (/(?<=(l\. ?|jasn[yoa] ?|light ?))(grey|szar[ya])/gi.test(text)) results.add('l.grey');
 	if (/(?<=(l\. ?|jasn[yoa] ?|light ?))(br|brąz|brown)/gi.test(text)) results.add('l.brown');
-	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(d\.)?(br|brąz|brown)\b/gi.test(text)) results.add('d.brown');
+	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(d\.)?(br|brąz|brown)\b/gi.test(text))
+		results.add('d.brown');
 
 	/* Apply defaults if no color specified */
 	if (results.size === 0) {
@@ -517,17 +537,9 @@ function getColor(text: string, faceType: string): string {
 </script>
 
 <template>
-	<button
-		class="btn-primary"
-		type="button"
-		@click="openFile">
+	<button class="btn-primary" type="button" @click="openFile">
 		<slot>Dodaj PDF</slot>
-		<input
-			ref="fileInput"
-			type="file"
-			multiple
-			hidden
-			@change="doit" />
+		<input ref="fileInput" type="file" multiple hidden @change="doit" />
 	</button>
 </template>
 
