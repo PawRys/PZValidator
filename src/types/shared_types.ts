@@ -22,9 +22,9 @@ export interface ProductData {
 	sizeA: number;
 	sizeB: number;
 	face: string;
-	color: string;
-	quantity: number;
-	quantityUnit: string;
+	color: string | null;
+	qtyUnit: string;
+	qtyValue: number;
 	sourcetxt: string;
 }
 

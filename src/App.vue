@@ -16,25 +16,26 @@ function hasDiffers(product: Product): boolean {
 	</header>
 
 	<main>
-		<h3>
+		<h6>
 			<UploadPDF />
+		</h6>
+
+		<h3>
+			Błędów: {{ useProductStore().products.filter(p => hasDiffers(p)).length }}/{{ useProductStore().products.length }}
 		</h3>
 
-		<h3>Błędów: {{ useProductStore().products.filter(p => hasDiffers(p)).length }}/{{ useProductStore().products.length }}</h3>
-		<ul
-			v-for="p in useProductStore().products"
-			:key="p.id"
-			:class="{ correctItems: !hasDiffers(p) }">
+		<ul v-for="p in useProductStore().products" :key="p.id" :class="{ correctItems: !hasDiffers(p) }">
 			<li>
-				<strong>{{ p.id.split('_')[1] }}.</strong> {{ p.invoiceNum }} / {{ p.PZnum }} / {{ p.arrivalPlace }}
+				<strong>{{ p.id.split('_')[1] }}.</strong> {{ p.invoiceNum }} <strong>/</strong> {{ p.PZnum }}
+				<strong>/</strong>
+				{{ p.arrivalPlace }}
 			</li>
 
 			<li v-if="!p.INV">
 				<u class="invalid">Brak faktury</u>
 			</li>
-			<li
-				v-else
-				:title="p.INV.sourcetxt">
+			<li v-else>
+				<i class="more-info" :title="p.INV.sourcetxt">?</i>
 				<u :class="{ valid: p.PZ && p.differs?.glue }">{{ p.INV?.glue }}</u>
 				<span> </span>
 				<u :class="{ valid: p.PZ && p.differs?.sizeT }">{{ p.INV?.sizeT }}</u>
@@ -47,17 +48,16 @@ function hasDiffers(product: Product): boolean {
 				<span> </span>
 				<u :class="{ valid: p.PZ && p.differs?.color }">{{ p.INV?.color }}</u>
 				<span> </span>
-				<u :class="{ valid: p.PZ && p.differs?.quantity }">{{ p.INV?.quantity }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.qtyValue }">{{ p.INV?.qtyValue }}</u>
 				<span> </span>
-				<u :class="{ valid: p.PZ && p.differs?.quantityUnit }">{{ p.INV?.quantityUnit }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.qtyUnit }">{{ p.INV?.qtyUnit }}</u>
 			</li>
 
 			<li v-if="!p.PZ">
 				<u class="invalid">Brak Przyjęcia</u>
 			</li>
-			<li
-				v-else
-				:title="p.PZ.sourcetxt">
+			<li v-else>
+				<i class="more-info" :title="p.PZ.sourcetxt">?</i>
 				<u :class="{ invalid: p.INV && p.differs?.glue }">{{ p.PZ?.glue }}</u>
 				<span> </span>
 				<u :class="{ invalid: p.INV && p.differs?.sizeT }">{{ p.PZ?.sizeT }}</u>
@@ -70,9 +70,9 @@ function hasDiffers(product: Product): boolean {
 				<span> </span>
 				<u :class="{ invalid: p.INV && p.differs?.color }">{{ p.PZ?.color }}</u>
 				<span> </span>
-				<u :class="{ invalid: p.INV && p.differs?.quantity }">{{ p.PZ?.quantity }}</u>
+				<u :class="{ invalid: p.INV && p.differs?.qtyValue }">{{ p.PZ?.qtyValue }}</u>
 				<span> </span>
-				<u :class="{ invalid: p.INV && p.differs?.quantityUnit }">{{ p.PZ?.quantityUnit }}</u>
+				<u :class="{ invalid: p.INV && p.differs?.qtyUnit }">{{ p.PZ?.qtyUnit }}</u>
 			</li>
 		</ul>
 	</main>
@@ -81,9 +81,7 @@ function hasDiffers(product: Product): boolean {
 		<p>Wszelkie prawa zastrzeżone - Paweł Ryszkowski</p>
 		<p>
 			Uwagi i pomoc techniczna:
-			<a
-				href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205"
-				target="_blank"
+			<a href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205" target="_blank"
 				>pawrys.kontakt@gmail.com</a
 			>
 			<span> - </span>
@@ -92,6 +90,14 @@ function hasDiffers(product: Product): boolean {
 		<p></p>
 	</footer>
 </template>
+
+<style>
+#app {
+	min-height: 100svh;
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+}
+</style>
 
 <style scoped>
 strong {
@@ -115,10 +121,26 @@ u {
 	text-decoration: none;
 }
 
+.more-info {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	cursor: help;
+
+	margin-right: 0.5em;
+	padding-top: 0.1em;
+	background-color: var(--background-color-interactive);
+	border: solid 1px var(--border-color-normal);
+	border-radius: 100%;
+	aspect-ratio: 1;
+	height: 1em;
+	font-family: 'Teko';
+}
+
 .valid,
 .invalid {
 	margin-inline: 0.2em;
-	padding-inline: 0.1em;
+	padding-inline: 0.2em;
 	outline-style: auto;
 	outline-width: 1px;
 	outline-offset: 1px;
@@ -127,8 +149,9 @@ u {
 	text-decoration-line: underline;
 	text-decoration-style: solid; */
 }
+
 .valid {
-	background-color: greenyellow;
+	background-color: palegreen;
 	outline-color: green;
 	/* text-decoration-style: solid; */
 }

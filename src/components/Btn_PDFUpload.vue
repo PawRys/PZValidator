@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import type { Product, ProductData, ProductDiff } from '@/types/shared_types';
 import { useProductStore } from '@/stores/products_store';
-import { correctText, combineRegex } from '@/exports/shared_script';
+import {
+	correctText,
+	combineRegex,
+	getArrivalPlace,
+	getCMRNum,
+	getColor,
+	getFaceType,
+	getGlueType,
+	getInvoiceNum,
+	getPZNum,
+	getTruckNum,
+} from '@/exports/shared_functions';
 import { ref } from 'vue';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
@@ -135,7 +146,7 @@ async function PDFtoTEXT(file: File): Promise<string[]> {
 		} // END row
 	} // END page
 
-	console.log(textFile.join('\n'));
+	// console.log(textFile.join('\n'));
 	return textFile;
 }
 
@@ -157,7 +168,7 @@ function getPZProducts(textFile: string[]): Product[] {
 	let idCounter = 0;
 	let itemGlue = '';
 	let itemFace = '';
-	let itemColor = '';
+	let itemColor: string | null = '';
 	let sourceTextOne = '';
 	let sourceTextTwo = '';
 	const PZnum = getPZNum(textFile);
@@ -171,7 +182,7 @@ function getPZProducts(textFile: string[]): Product[] {
 			itemGlue = getGlueType(textrow);
 			itemFace = getFaceType(textrow);
 			itemColor = getColor(textrow, itemFace);
-			sourceTextOne = textrow;
+			sourceTextOne = textrow.replace(/\s{2,}/g, ' ').trim();
 
 			results.push({
 				id: idNum,
@@ -185,9 +196,9 @@ function getPZProducts(textFile: string[]): Product[] {
 					sizeB: Number(itemSizeB),
 					face: itemFace,
 					color: itemColor,
-					quantity: Number(itemQty.replace(/,/, '.')),
-					quantityUnit: itemQtyUnit,
-					sourcetxt: `${sourceTextOne}`.replace(/\s{2,}/g, ' ').trim(),
+					qtyValue: Number(itemQty.replace(/,/, '.')),
+					qtyUnit: itemQtyUnit,
+					sourcetxt: `${sourceTextOne}`,
 				},
 			});
 		}
@@ -216,7 +227,7 @@ function getLatvijasProducts(textFile: string[]): Product[] {
 	let idCounter = 0;
 	let itemGlue = '';
 	let itemFace = '';
-	let itemColor = '';
+	let itemColor: string | null = '';
 	let sourceTextOne = '';
 	let sourceTextTwo = '';
 	const arrivalPlace = getArrivalPlace(textFile);
@@ -260,8 +271,8 @@ function getLatvijasProducts(textFile: string[]): Product[] {
 					sizeB: Number(itemSizeB),
 					face: itemFace,
 					color: itemColor,
-					quantity: Number(itemQty.replace(/,/, '.')),
-					quantityUnit: polishUnits[itemQtyUnit.trim()]!,
+					qtyValue: Number(itemQty.replace(/,/, '.')),
+					qtyUnit: polishUnits[itemQtyUnit.trim()]!,
 					sourcetxt: `${sourceTextOne}\n${sourceTextTwo}`,
 				},
 			});
@@ -332,8 +343,8 @@ function getStigaProducts(textFile: string[]): Product[] {
 					sizeB: Number(item_sizeB),
 					face: getFaceType(item_face),
 					color: getColor(item_face, item_face),
-					quantity: Number(item_cubicQty.replace(/,/, '.')),
-					quantityUnit: 'm3',
+					qtyValue: Number(item_cubicQty.replace(/,/, '.')),
+					qtyUnit: 'm3',
 					sourcetxt: `${sourceTextOne}\n${sourceTextTwo}`,
 				},
 			});
@@ -348,15 +359,14 @@ function findDiffers(products: Product[]): void {
 	products.forEach(item => {
 		const differs: ProductDiff = {};
 
-		if (item.INV?.glue !== item.PZ?.glue) differs.glue = [item.INV?.glue, item.PZ?.glue];
 		if (item.INV?.sizeT !== item.PZ?.sizeT) differs.sizeT = [item.INV?.sizeT, item.PZ?.sizeT];
 		if (item.INV?.sizeA !== item.PZ?.sizeA) differs.sizeA = [item.INV?.sizeA, item.PZ?.sizeA];
 		if (item.INV?.sizeB !== item.PZ?.sizeB) differs.sizeB = [item.INV?.sizeB, item.PZ?.sizeB];
 		if (item.INV?.face !== item.PZ?.face) differs.face = [item.INV?.face, item.PZ?.face];
+		if (item.INV?.glue !== item.PZ?.glue) differs.glue = [item.INV?.glue, item.PZ?.glue];
 		if (item.INV?.color !== item.PZ?.color) differs.color = [item.INV?.color, item.PZ?.color];
-		if (item.INV?.quantity !== item.PZ?.quantity) differs.quantity = [item.INV?.quantity, item.PZ?.quantity];
-		if (item.INV?.quantityUnit !== item.PZ?.quantityUnit)
-			differs.quantityUnit = [item.INV?.quantityUnit, item.PZ?.quantityUnit];
+		if (item.INV?.qtyUnit !== item.PZ?.qtyUnit) differs.qtyUnit = [item.INV?.qtyUnit, item.PZ?.qtyUnit];
+		if (item.INV?.qtyValue !== item.PZ?.qtyValue) differs.qtyValue = [item.INV?.qtyValue, item.PZ?.qtyValue];
 
 		Object.assign(item, {
 			differs: differs,
@@ -373,188 +383,13 @@ function saveToProductStore(products: Product[]): void {
 			: useProductStore().addProduct(product);
 	});
 }
-
-function getArrivalPlace(text_rows: string[]): string {
-	let result = '';
-	text_rows.forEach((textrow, i) => {
-		const LF = textrow.includes('Terms of delivery:') ? textrow.replace('Terms of delivery:', '').trim() : '';
-		const ST = /100\s*%\s*Prepayment\s*DAP/i.test(textrow) ? textrow.replace(/100\s*%\s*Prepayment/i, '').trim() : '';
-
-		if (LF) result = LF;
-		if (ST) result = ST;
-	});
-	return result;
-}
-
-function getPZNum(text_rows: string[]): string {
-	let result = '';
-	text_rows.forEach((textrow, i) => {
-		const PZ = textrow.match(/\d{2}-PZ\/\d{4}\w+\b/i);
-		if (PZ) result = PZ[0];
-	});
-	return result;
-}
-
-function getInvoiceNum(text_rows: string[]): string {
-	let result = '';
-	text_rows.forEach((textrow, i) => {
-		const LF = textrow.match(/LF[0-9]{2} M[0-9]{6}/i);
-		const ST = textrow.match(/DR[0-9]+/i);
-
-		if (LF) result = LF[0];
-		if (ST) result = ST[0];
-	});
-	return result;
-}
-
-function getTruckNum(text_rows: string[]): string {
-	let result = '';
-	text_rows.forEach((textrow, i) => {
-		if (textrow.includes('Carriage by:')) {
-			result = textrow.replace('Carriage by:', '').trim();
-			return;
-		}
-	});
-	return result;
-}
-
-function getCMRNum(text_rows: string[]): string {
-	let result = '';
-	text_rows.forEach((textrow, i) => {
-		const match = textrow.match(/CMR_[A-Z]{1}[0-9]{6}/i);
-		if (match) {
-			result = match[0];
-			return;
-		}
-	});
-	return result;
-}
-
-function getGlueType(text: string): string {
-	let result = '';
-	if (/foliowana|antypo|melamin|M\?M/g.test(text)) result = 'WD';
-	if (/wodo|\bWD\b|\bEXT\b|\bE\b/g.test(text)) result = 'WD';
-	if (/sucho|\bMR\b|\bINT\b/g.test(text)) result = 'MR';
-	return result;
-}
-
-function getFaceType(text: string): string {
-	let result = '';
-
-	const regexpGrade = /\b(S|B|BB|CP|WG|WGE|C|CC|V|[WFM]( ?[ALT])?( I{1,2})?)\b/;
-	const expression = new RegExp(`${regexpGrade.source}/${regexpGrade.source}`, 'gi');
-	if (expression.test(text)) {
-		const grade = text.match(expression);
-		result = grade ? grade[0] : '??/??';
-		result = result.replace(/( ?[ALT])?( I{1,2})?/g, '');
-	}
-	/*!!! Keep order. Any order if equal number. !!! */
-
-	/*1*/ if (/s01\//gi.test(text)) result = 'B/B';
-	/*1*/ if (/s02\//gi.test(text)) result = 'B/BB';
-	/*1*/ if (/s03\//gi.test(text)) result = 'S/BB';
-	/*1*/ if (/s04\//gi.test(text)) result = 'BB/BB';
-	/*1*/ if (/s05\//gi.test(text)) result = 'BB/CP';
-	/*1*/ if (/s06\//gi.test(text)) result = 'BB/WG';
-	/*1*/ if (/s07\//gi.test(text)) result = 'CP/CP';
-	/*1*/ if (/s08\//gi.test(text)) result = 'WGE/WGE';
-	/*1*/ if (/s09\//gi.test(text)) result = 'WG/WG';
-	/*1*/ if (/s10\//gi.test(text)) result = 'C/C';
-	/*1*/ if (/s11\//gi.test(text)) result = 'Kilo';
-	/*1*/ if (/s12\/|s13\//gi.test(text)) result = 'F/F'; // II applied in *4*
-	/*1*/ if (/s14\/|s15\//gi.test(text)) result = 'W/F'; // II applied in *4*
-	/*1*/ if (/s16\/|s17\//gi.test(text)) result = 'W/W'; // II applied in *4*
-	/*1*/ if (/s18\//gi.test(text)) result = 'CP/C';
-	/*1*/ if (/s19\//gi.test(text)) result = 'M/WG';
-	/*1*/ if (/s20\//gi.test(text)) result = 'F/BB';
-	/*1*/ if (/s21\//gi.test(text)) result = 'F/WG';
-	/*1*/ if (/s22\//gi.test(text)) result = 'BB/C';
-	/*1*/ if (/s23\//gi.test(text)) result = 'W/BB';
-	/*1*/ if (/s24\//gi.test(text)) result = 'W/WG';
-	/*1*/ if (/s25\//gi.test(text)) result = 'B/WG';
-	/*1*/ if (/s26\//gi.test(text)) result = 'F/WH';
-	/*1*/ if (/s27\//gi.test(text)) result = 'W/CP';
-	/*1*/ if (/s28\//gi.test(text)) result = 'S/WG';
-	/*1*/ if (/s29\//gi.test(text)) result = 'S/CP';
-	/*1*/ if (/s30\//gi.test(text)) result = 'V/V';
-	/*1*/ if (/s31\//gi.test(text)) result = 'OSB3';
-	/*1*/ if (/s32\//gi.test(text)) result = 'OSB T&G';
-	/*1*/ if (/s35\//gi.test(text)) result = 'BB/CC';
-
-	/*2.1*/ if (/\bkilo\b/gi.test(text)) result = 'Kilo';
-	/*2.2*/ if (/\bPQ\b/gi.test(text)) result = 'PQ';
-	/*2.3*/ if (/\bPQ\W?F\b/gi.test(text)) result = 'PQF';
-	/*3*/ if (/\bF\/W\W?H\b|Heksa/gi.test(text)) result = 'Heksa';
-	/*3*/ if (/\bF\/W\W?H\W?\+|Heksa\W?\+|Heksa Plus/gi.test(text)) result = 'Heksa Plus';
-	/*3*/ if (/\bM\/M\b|\bopal white\b/gi.test(text)) result = 'M/M';
-	// /*3*/ if (/\bhoney\b/gi.test(text)) result = 'Honey'
-	// /*3*/ if (/\bM\/M\b|mel/gi.test(text)) result = 'M/M'
-	// /*3*/ if (/\bopal\b/gi.test(text)) result = 'Opal'
-	// /*3*/ if (/\bopal white\b/gi.test(text)) result = 'Opal White'
-	/*3*/ if (/\bPF\b|poliform/gi.test(text)) result = 'Poliform';
-	/*3*/ if (/\bPPL\b/gi.test(text)) result = 'PPL';
-	/*3*/ if (/OSB/gi.test(text)) result = 'OSB';
-
-	/*4*/ // !important Apply II grade at the end
-	// /*4*/ if (/s13\/|s15\/|s17\/|((WT|FA|MA|W|F|M) II)/gi.test(text)) result += ' II'
-	/*4*/ if (/s13\/|s15\/|s17\/|([WFM]( ?[ALT])? II)/gi.test(text)) result += ' II';
-
-	return result;
-}
-
-function getColor(text: string, faceType: string): string {
-	const results = new Set();
-
-	if (/\bhoney\b/gi.test(text)) results.add('honey');
-	if (/yell|zółt[ya]/gi.test(text)) results.add('yellow');
-	if (/black|czarn[ya]/gi.test(text)) results.add('black');
-	if (/green|zielon[ya]/gi.test(text)) results.add('green');
-	if (/blue|niebiesk[ia]/gi.test(text)) results.add('blue');
-	if (/\bred\b|czerwon[ya]/gi.test(text)) results.add('red');
-	if (/(?<!(opal ?))(white)/gi.test(text)) results.add('white');
-	if (/(?<=(opal ?))(white)/gi.test(text)) results.add('opal white');
-	if (/c\.less|transp|bezbarwna|colorless/gi.test(text)) results.add('c.less');
-	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(grey|szar[ya])/gi.test(text)) results.add('grey');
-	if (/(?<=(l\. ?|jasn[yoa] ?|light ?))(grey|szar[ya])/gi.test(text)) results.add('l.grey');
-	if (/(?<=(l\. ?|jasn[yoa] ?|light ?))(br|brąz|brown)/gi.test(text)) results.add('l.brown');
-	if (/(?<!(l\. ?|jasn[yoa] ?|light ?))(d\.)?(br|brąz|brown)\b/gi.test(text)) results.add('d.brown');
-
-	/* Apply defaults if no color specified */
-	if (results.size === 0) {
-		if (faceType?.match('F/F')) results.add('d.brown');
-		if (faceType?.match('F/W')) results.add('d.brown');
-		if (faceType?.match('W/F')) results.add('d.brown');
-		if (faceType?.match('W/W')) results.add('d.brown');
-		if (faceType?.match('Heksa')) results.add('d.brown');
-		if (faceType?.match('M/M')) results.add('white');
-		// if (faceType?.match('Poliform')) results.add('(nieznany)');
-		// if (faceType?.match('PPL')) results.add('(nieznany)');
-		// if (faceType?.match('PQF')) results.add('(nieznany)');
-	}
-
-	// if (results.size === 0 && faceType) results.add('(brak)')
-	// else results.add('(laminat)')
-	// if (results.size === 0) results.add('(---)')
-	return Array.from(results).join(' ');
-}
 </script>
 
 <template>
-	<button
-		class="btn-primary"
-		type="button"
-		@click="openFile">
-		<slot>Dodaj PDF</slot
-		><span
-			v-if="isWorking"
-			class="spinner"></span>
+	<button class="btn-primary" type="button" @click="openFile">
+		<slot>Dodaj PDF</slot><span v-if="isWorking" class="spinner"></span>
 
-		<input
-			ref="fileInput"
-			type="file"
-			multiple
-			hidden
-			@change="doit" />
+		<input ref="fileInput" type="file" multiple hidden @change="doit" />
 	</button>
 </template>
 
