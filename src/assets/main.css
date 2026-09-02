@@ -1,9 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:GRAD,XOPQ,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC,opsz,slnt,wdth,wght@-200..150,27..175,323..603,25..135,649..854,-305..-98,560..788,416..570,528..760,8..144,-10..0,25..151,100..1000&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Karma:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap');
-@import url('https://cdn.jsdelivr.net/npm/normalize.css/normalize.css');
-
+@import url('https://fonts.googleapis.com/css2?family=Karma:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Roboto+Flex:opsz,wght,XOPQ,XTRA,YOPQ,YTDE,YTFI,YTLC,YTUC@8..144,100..1000,96,468,79,-203,738,514,712&family=Teko:wght@300..700&display=swap');
 @import url('./_reset.css');
 @import url('./_variables.css');
 @import url('./_typography.css');
@@ -11,21 +6,21 @@
 @import url('./_forms.css');
 
 :root {
-	/*font-size: 112.5%; /*18px*/
-	font-size: 100%; /*18px*/
+  font-size: 112.5%; /* 18px */
+  font-family: 'Rajdhani', sans-serif;
 }
 
 body {
-	padding-inline: 1ch;
-	max-width: 105ch;
-	margin-inline: auto;
+  padding-inline: 1ch;
+  max-width: 125ch;
+  margin-inline: auto;
 
-	background-color: var(--background-color-main);
-	font-family: var(--font-family-main);
-	font-size: 1rem;
-	color: var(--font-color-normal);
+  background-color: var(--background-color-main);
+  font-family: var(--font-family-main);
+  font-size: 1rem;
+  color: var(--font-color-normal);
 }
 
 ::selection {
-	background-color: var(--font-color-selected);
+  background-color: var(--font-color-selected);
 }

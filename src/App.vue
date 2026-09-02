@@ -16,58 +16,64 @@ function hasDiffers(product: Product): boolean {
 	</header>
 
 	<main>
-		<h1>You did it!</h1>
-		<UploadPDF />
+		<h3>
+			<UploadPDF />
+		</h3>
 
-		<h4>Błędów: {{ useProductStore().products.filter(p => hasDiffers(p)).length }}/{{ useProductStore().products.length }}</h4>
+		<h3>Błędów: {{ useProductStore().products.filter(p => hasDiffers(p)).length }}/{{ useProductStore().products.length }}</h3>
 		<ul
-			v-for="product in useProductStore().products"
-			:key="product.id"
-			:class="{ correctItems: !hasDiffers(product) }">
-			<li>{{ product.id.split('_')[1] }}. {{ product.invoiceNum }} / {{ product.PZnum }} / {{ product.arrivalPlace }}</li>
-
-			<li v-if="!product.INV">Brak faktury</li>
-			<li v-else>
-				<u :class="{ valid: product.differs?.glue }">{{ product.INV?.glue }}</u>
-				<span> </span>
-				<u :class="{ valid: product.differs?.sizeT }">{{ product.INV?.sizeT }}</u>
-				<span>x</span>
-				<u :class="{ valid: product.differs?.sizeA }">{{ product.INV?.sizeA }}</u>
-				<span>x</span>
-				<u :class="{ valid: product.differs?.sizeB }">{{ product.INV?.sizeB }}</u>
-				<span>mm </span>
-
-				<u :class="{ valid: product.differs?.face }">{{ product.INV?.face }}</u>
-				<span> </span>
-				<u :class="{ valid: product.differs?.color }">{{ product.INV?.color }}</u>
-				<span> </span>
-				<u :class="{ valid: product.differs?.quantity }">{{ product.INV?.quantity }}</u>
-				<span> </span>
-				<u :class="{ valid: product.differs?.quantityUnit }">{{ product.INV?.quantityUnit }}</u>
+			v-for="p in useProductStore().products"
+			:key="p.id"
+			:class="{ correctItems: !hasDiffers(p) }">
+			<li>
+				<strong>{{ p.id.split('_')[1] }}.</strong> {{ p.invoiceNum }} / {{ p.PZnum }} / {{ p.arrivalPlace }}
 			</li>
 
-			<li v-if="!product.PZ">Brak Przyjęcia</li>
-			<li v-else>
-				<u :class="{ invalid: product.differs?.glue }">{{ product.PZ?.glue }}</u>
+			<li v-if="!p.INV">
+				<u class="invalid">Brak faktury</u>
+			</li>
+			<li
+				v-else
+				:title="p.INV.sourcetxt">
+				<u :class="{ valid: p.PZ && p.differs?.glue }">{{ p.INV?.glue }}</u>
 				<span> </span>
-				<u :class="{ invalid: product.differs?.sizeT }">{{ product.PZ?.sizeT }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.sizeT }">{{ p.INV?.sizeT }}</u>
 				<span>x</span>
-				<u :class="{ invalid: product.differs?.sizeA }">{{ product.PZ?.sizeA }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.sizeA }">{{ p.INV?.sizeA }}</u>
 				<span>x</span>
-				<u :class="{ invalid: product.differs?.sizeB }">{{ product.PZ?.sizeB }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.sizeB }">{{ p.INV?.sizeB }}</u>
 				<span>mm </span>
-
-				<u :class="{ invalid: product.differs?.face }">{{ product.PZ?.face }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.face }">{{ p.INV?.face }}</u>
 				<span> </span>
-				<u :class="{ invalid: product.differs?.color }">{{ product.PZ?.color }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.color }">{{ p.INV?.color }}</u>
 				<span> </span>
-				<u :class="{ invalid: product.differs?.quantity }">{{ product.PZ?.quantity }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.quantity }">{{ p.INV?.quantity }}</u>
 				<span> </span>
-				<u :class="{ invalid: product.differs?.quantityUnit }">{{ product.PZ?.quantityUnit }}</u>
+				<u :class="{ valid: p.PZ && p.differs?.quantityUnit }">{{ p.INV?.quantityUnit }}</u>
 			</li>
 
-			<li class="full-desc">{{ product.INV?.sourcetxt }}</li>
-			<li class="full-desc">{{ product.PZ?.sourcetxt }}</li>
+			<li v-if="!p.PZ">
+				<u class="invalid">Brak Przyjęcia</u>
+			</li>
+			<li
+				v-else
+				:title="p.PZ.sourcetxt">
+				<u :class="{ invalid: p.INV && p.differs?.glue }">{{ p.PZ?.glue }}</u>
+				<span> </span>
+				<u :class="{ invalid: p.INV && p.differs?.sizeT }">{{ p.PZ?.sizeT }}</u>
+				<span>x</span>
+				<u :class="{ invalid: p.INV && p.differs?.sizeA }">{{ p.PZ?.sizeA }}</u>
+				<span>x</span>
+				<u :class="{ invalid: p.INV && p.differs?.sizeB }">{{ p.PZ?.sizeB }}</u>
+				<span>mm </span>
+				<u :class="{ invalid: p.INV && p.differs?.face }">{{ p.PZ?.face }}</u>
+				<span> </span>
+				<u :class="{ invalid: p.INV && p.differs?.color }">{{ p.PZ?.color }}</u>
+				<span> </span>
+				<u :class="{ invalid: p.INV && p.differs?.quantity }">{{ p.PZ?.quantity }}</u>
+				<span> </span>
+				<u :class="{ invalid: p.INV && p.differs?.quantityUnit }">{{ p.PZ?.quantityUnit }}</u>
+			</li>
 		</ul>
 	</main>
 
@@ -88,8 +94,16 @@ function hasDiffers(product: Product): boolean {
 </template>
 
 <style scoped>
+strong {
+	font-weight: 700;
+}
+ul {
+	padding: 0;
+}
+
 li {
-	font-size: 1.1rem;
+	list-style: none;
+	font-size: 1rem;
 	padding-block: 0.2em;
 }
 
@@ -126,6 +140,9 @@ u {
 }
 
 .full-desc {
+	font-size: 0.9rem;
+	font-style: italic;
 	white-space: pre-line;
+	color: grey;
 }
 </style>

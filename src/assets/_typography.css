@@ -1,43 +1,43 @@
 h1 {
-	font-size: 2.5rem;
-	line-height: 1.2;
-	font-weight: 700;
-	margin: 0 0 1rem;
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 0 0 1rem;
 }
 
 h2 {
-	font-size: 2rem;
-	line-height: 1.25;
-	font-weight: 700;
-	margin: 0 0 0.875rem;
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 700;
+  margin: 0 0 0.875rem;
 }
 
 h3 {
-	font-size: 1.5rem;
-	line-height: 1.3;
-	font-weight: 600;
-	margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
 }
 
 h4 {
-	font-size: 1.25rem;
-	line-height: 1.4;
-	font-weight: 600;
-	margin: 0 0 0.625rem;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  font-weight: 600;
+  margin: 0 0 0.625rem;
 }
 
 h5 {
-	font-size: 1.125rem;
-	line-height: 1.4;
-	font-weight: 600;
-	margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
 }
 
 h6 {
-	font-size: 1rem;
-	line-height: 1.5;
-	font-weight: 600;
-	margin: 0 0 0.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
 }
 
 h1,
@@ -46,14 +46,14 @@ h3,
 h4,
 h5,
 h6 {
-	font-family: var(--font-family-heading);
+  font-family: var(--font-family-heading);
 }
 
 p {
-	font-size: 1rem;
-	line-height: 1.6;
-	font-weight: 400;
-	margin: 0 0 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+  margin: 0 0 1rem;
 
-	/* font-family: 'Karma', serif; */
+  /* font-family: 'Karma', serif; */
 }

@@ -1,18 +1,18 @@
 input,
 textarea,
 select {
-	border: solid 1px var(--border-color-normal);
-	border-radius: var(--spacing-small);
-	padding: var(--padding-size-medium);
-	background-color: var(--background-color-formfield);
+  border: solid 1px var(--border-color-normal);
+  border-radius: var(--spacing-small);
+  padding: var(--padding-size-medium);
+  background-color: var(--background-color-formfield);
 
-	font-family: var(--font-family-print);
-	font-size: 0.95rem;
-	font-weight: 200;
+  font-family: var(--font-family-print);
+  font-size: 0.95rem;
+  font-weight: 200;
 }
 
 input.action,
 textarea.action,
 select.action {
-	border: solid 2px var(--action-color-normal);
+  border: solid 2px var(--action-color-normal);
 }

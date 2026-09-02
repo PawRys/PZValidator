@@ -1,84 +1,84 @@
 :root {
-	--neutral-000: #ffffff;
-	--neutral-050: #fafafa;
-	--neutral-100: #f4f4f4;
-	--neutral-200: #e5e5e5;
-	--neutral-300: #d4d4d4;
-	--neutral-400: #a3a3a3;
-	--neutral-500: #737373;
-	--neutral-600: #525252;
-	--neutral-700: #404040;
-	--neutral-800: #262626;
-	--neutral-900: #171717;
-	--neutral-950: #0a0a0a;
-	--neutral-999: #000000;
+  --neutral-000: #ffffff;
+  --neutral-050: #fafafa;
+  --neutral-100: #f4f4f4;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+  --neutral-950: #0a0a0a;
+  --neutral-999: #000000;
 
-	--action-050: #fff7ed;
-	--action-100: #ffedd5;
-	--action-200: #fed7aa;
-	--action-300: #fdba74;
-	--action-400: #fb923c;
-	--action-500: #f97316;
-	--action-600: #ea580c;
-	--action-700: #c2410c;
-	--action-800: #9a3412;
-	--action-900: #7c2d12;
+  --action-050: #fff7ed;
+  --action-100: #ffedd5;
+  --action-200: #fed7aa;
+  --action-300: #fdba74;
+  --action-400: #fb923c;
+  --action-500: #f97316;
+  --action-600: #ea580c;
+  --action-700: #c2410c;
+  --action-800: #9a3412;
+  --action-900: #7c2d12;
 
-	--action-color-subtle: var(--action-100);
-	--action-color-normal: var(--action-300);
-	--action-color-strong: var(--action-500);
+  --action-color-subtle: var(--action-100);
+  --action-color-normal: var(--action-300);
+  --action-color-strong: var(--action-500);
 
-	--border-color-subtle: var(--neutral-300);
-	--border-color-normal: var(--neutral-400);
-	--border-color-strong: var(--neutral-500);
+  --border-color-subtle: var(--neutral-300);
+  --border-color-normal: var(--neutral-400);
+  --border-color-strong: var(--neutral-500);
 
-	--font-color-link: var(--neutral-700);
-	--font-color-hover: var(--neutral-400);
-	--font-color-normal: var(--neutral-800);
-	--font-color-selected: var(--action-050);
+  --font-color-link: var(--neutral-700);
+  --font-color-hover: var(--neutral-400);
+  --font-color-normal: var(--neutral-800);
+  --font-color-selected: var(--action-100);
 
-	--background-color-main: var(--neutral-100);
-	--background-color-formfield: var(--neutral-000);
-	--background-color-interactive: var(--neutral-200);
-	--background-color-interactive-hover: var(--neutral-300);
+  --background-color-main: var(--neutral-100);
+  --background-color-formfield: var(--neutral-000);
+  --background-color-interactive: var(--neutral-200);
+  --background-color-interactive-hover: var(--neutral-300);
 
-	--font-family-main: 'Rajdhani', serif;
-	--font-family-heading: 'Teko', sans-serif;
-	--font-family-interactive: 'Rajdhani', sans-serif;
-	--font-family-print: 'Roboto Flex', monospace;
+  --font-family-main: 'Rajdhani', serif;
+  --font-family-heading: 'Teko', sans-serif;
+  --font-family-interactive: 'Rajdhani', sans-serif;
+  --font-family-print: 'Roboto Flex', monospace;
 
-	--padding-size-small: 0.1em 0.4em;
-	--padding-size-medium: 0.3em 0.6em;
-	--padding-size-large: 0.6em 0.9em;
+  --padding-size-small: 0.1em 0.4em;
+  --padding-size-medium: 0.3em 0.6em;
+  --padding-size-large: 0.6em 0.9em;
 
-	--spacing-small: 0.1em;
-	--spacing-medium: 0.3em;
-	--spacing-large: 0.6em;
+  --spacing-small: 0.1em;
+  --spacing-medium: 0.3em;
+  --spacing-large: 0.6em;
 
-	--button-font-color: #fff;
-	--button-border-color: #fff;
-	--button-background-color: #000;
-	--button-action-border-color: #fff;
+  --button-font-color: #fff;
+  --button-border-color: #fff;
+  --button-background-color: #000;
+  --button-action-border-color: #fff;
 }
 
 @media (prefers-color-scheme: dark) {
-	:root {
-		--action-color-subtle: var(--action-200);
-		--action-color-normal: var(--action-400);
-		--action-color-strong: var(--action-600);
+  :root {
+    --action-color-subtle: var(--action-200);
+    --action-color-normal: var(--action-400);
+    --action-color-strong: var(--action-600);
 
-		--border-color-subtle: var(--neutral-600);
-		--border-color-normal: var(--neutral-500);
-		--border-color-strong: var(--neutral-400);
+    --border-color-subtle: var(--neutral-600);
+    --border-color-normal: var(--neutral-500);
+    --border-color-strong: var(--neutral-400);
 
-		--font-color-link: var(--neutral-300);
-		--font-color-hover: var(--neutral-400);
-		--font-color-normal: var(--neutral-100);
-		--font-color-selected: var(--action-400);
+    --font-color-link: var(--neutral-300);
+    --font-color-hover: var(--neutral-400);
+    --font-color-normal: var(--neutral-100);
+    --font-color-selected: var(--action-400);
 
-		--background-color-main: var(--neutral-900);
-		--background-color-formfield: var(--neutral-700);
-		--background-color-interactive: var(--neutral-800);
-		--background-color-interactive-hover: var(--neutral-700);
-	}
+    --background-color-main: var(--neutral-900);
+    --background-color-formfield: var(--neutral-700);
+    --background-color-interactive: var(--neutral-800);
+    --background-color-interactive-hover: var(--neutral-700);
+  }
 }
