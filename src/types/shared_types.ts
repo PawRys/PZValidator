@@ -17,7 +17,7 @@ export interface Product {
 }
 
 export interface ProductData {
-	sourcetxt: string;
+	glue: string;
 	sizeT: number;
 	sizeA: number;
 	sizeB: number;
@@ -25,6 +25,7 @@ export interface ProductData {
 	color: string;
 	quantity: number;
 	quantityUnit: string;
+	sourcetxt: string;
 }
 
 export type SortFunction = 'default' | 'bytime' | 'bysize' | 'byformat' | 'bytruckandsize' | 'bytruckandformat';
