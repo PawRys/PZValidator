@@ -6,8 +6,8 @@ import { ref } from 'vue';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
 
-const productStore = useProductStore();
 const fileInput = ref<HTMLInputElement | null>(null);
+const isWorking = ref(false);
 
 const PZ_regex = new RegExp(/Przyjęcie do magazynu - \d\d-PZ \d{4}\w{2,}\.pdf/i);
 const LF_regex = new RegExp(/LF\d\d M\d{6}/i);
@@ -18,16 +18,15 @@ function openFile() {
 }
 
 async function doit(event: Event): Promise<void> {
+	isWorking.value = true;
 	const target = event.target as HTMLInputElement;
-	const pdfFilesList = target.files as FileList;
-	const validFilesList = await validateFiles(pdfFilesList);
-	const unmergedProducts = await processFiles(validFilesList);
-	const mergedProducts = mergeProducts(unmergedProducts);
-	const differs = findDiffers(mergedProducts);
+	const pdfFiles = target.files as FileList;
+	const validFiles = await validateFiles(pdfFiles);
+	const processedFiles = await processFiles(validFiles);
 
-	differs.forEach(item => useProductStore().addProduct(item));
-
-	console.log(mergedProducts);
+	saveToProductStore(processedFiles);
+	findDiffers(useProductStore().products);
+	isWorking.value = false;
 }
 
 async function validateFiles(fileList: FileList): Promise<File[]> {
@@ -37,7 +36,7 @@ async function validateFiles(fileList: FileList): Promise<File[]> {
 	for (const file of fileList) {
 		const isPdf = file.type === 'application/pdf';
 
-		const validPatterns = [PZ_regex, LF_regex];
+		const validPatterns = [PZ_regex, LF_regex, ST_regex];
 		const hasValidName = validPatterns.some(pattern => pattern.test(file.name));
 
 		if (isPdf && hasValidName) {
@@ -71,16 +70,16 @@ async function processFiles(fileList: File[]): Promise<Product[]> {
 			continue;
 		}
 
-		// if (ST_regex.test(file.name)) {
-		//   result.push(...getStigaProducts(TEXTrows))
-		// }
+		if (ST_regex.test(file.name)) {
+			result.push(...getStigaProducts(TEXTrows));
+		}
 	}
 
 	return result;
 }
 
 async function PDFtoTEXT(file: File): Promise<string[]> {
-	let TEXTrows: string[] = [];
+	let textFile: string[] = [];
 
 	const pdf = await pdfjsLib.getDocument({
 		data: await file.arrayBuffer(),
@@ -132,15 +131,15 @@ async function PDFtoTEXT(file: File): Promise<string[]> {
 				})
 				.join('');
 
-			TEXTrows.push(textrow);
+			textFile.push(textrow);
 		} // END row
 	} // END page
 
-	// console.log(TEXTrows.join('\n'));
-	return TEXTrows;
+	console.log(textFile.join('\n'));
+	return textFile;
 }
 
-function getPZProducts(TEXTrows: string[]): Product[] {
+function getPZProducts(textFile: string[]): Product[] {
 	const results: Product[] = [];
 
 	const sizeT_re = /(\d{1,2}(?:[,.]\d)?)x/;
@@ -149,7 +148,10 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 	const description_re = /(.+)\s{2,}/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(m3|m2|szt)/;
-	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, description_re, quantity_re, quantityUnit_re), 'i');
+	const full_regexp = new RegExp(
+		combineRegex(sizeT_re, sizeA_re, sizeB_re, description_re, quantity_re, quantityUnit_re),
+		'i',
+	);
 
 	let idNum = '';
 	let idCounter = 0;
@@ -158,10 +160,10 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 	let itemColor = '';
 	let sourceTextOne = '';
 	let sourceTextTwo = '';
-	const PZnum = getPZNum(TEXTrows);
-	const invoiceNum = getInvoiceNum(TEXTrows);
+	const PZnum = getPZNum(textFile);
+	const invoiceNum = getInvoiceNum(textFile);
 
-	TEXTrows.forEach((textrow, rowIndex) => {
+	textFile.forEach((textrow, rowIndex) => {
 		const [, itemSizeT, itemSizeA, itemSizeB, itemDescription, itemQty, itemQtyUnit] = textrow.match(full_regexp) ?? [];
 
 		if (itemSizeT && itemSizeA && itemSizeB && itemDescription && itemQty && itemQtyUnit) {
@@ -195,7 +197,7 @@ function getPZProducts(TEXTrows: string[]): Product[] {
 	return results;
 }
 
-function getLatvijasProducts(TEXTrows: string[]): Product[] {
+function getLatvijasProducts(textFile: string[]): Product[] {
 	const results: Product[] = [];
 	const polishUnits: Record<string, string> = { cbm: 'm3', sqr: 'm2', pcs: 'szt' };
 
@@ -205,7 +207,10 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	const packing_re = /(\d{1,2}x\d{1,3})\s+/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(cbm|sqr|pcs)/;
-	const full_regexp = new RegExp(combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, quantity_re, quantityUnit_re), 'i');
+	const full_regexp = new RegExp(
+		combineRegex(sizeT_re, sizeA_re, sizeB_re, packing_re, quantity_re, quantityUnit_re),
+		'i',
+	);
 
 	let idNum = '';
 	let idCounter = 0;
@@ -214,15 +219,13 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	let itemColor = '';
 	let sourceTextOne = '';
 	let sourceTextTwo = '';
-	const arrivalPlace = getArrivalPlace(TEXTrows);
-	const invoiceNum = getInvoiceNum(TEXTrows);
-	const truckNum = getTruckNum(TEXTrows);
-	const CMRNum = getCMRNum(TEXTrows);
+	const arrivalPlace = getArrivalPlace(textFile);
+	const invoiceNum = getInvoiceNum(textFile);
+	const truckNum = getTruckNum(textFile);
+	const CMRNum = getCMRNum(textFile);
 
-	TEXTrows.forEach(textrow => {
+	textFile.forEach(textrow => {
 		if (/Birch plywood|KILO\/KILO|PQ\/PQ/.test(textrow)) {
-			sourceTextOne = textrow.replace(/\s{2,}/g, ' ').trim();
-			// itemGlue = textrow.match(/MR|WD|INT|EXT/i)?.[0] ?? ''
 			const declutered_text = textrow
 				.replace(/Birch plywood RIGA |PLY|TEX|FORM|MEL|/gi, '')
 				.replace(/, edges sealed .*|,[^,]*441233[0-9]{2}.*/gi, '')
@@ -234,6 +237,7 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 			itemGlue = getGlueType(textrow);
 			itemFace = getFaceType(declutered_text);
 			itemColor = getColor(declutered_text, itemFace);
+			sourceTextOne = textrow.replace(/\s{2,}/g, ' ').trim();
 		}
 
 		const [, itemSizeT, itemSizeA, itemSizeB, itemPacking, itemQty, itemQtyUnit] = textrow.match(full_regexp) ?? [];
@@ -268,102 +272,106 @@ function getLatvijasProducts(TEXTrows: string[]): Product[] {
 	return results;
 }
 
-function getStigaProducts(TEXTrows: string[]): Product[] {
+function getStigaProducts(textFile: string[]): Product[] {
 	const results: Product[] = [];
-	//   const id_re = String.raw`\d{1,2}`
-	//   const sizeA_re = String.raw`(\d{3,4})` // Capture group
-	//   const sizeB_re = String.raw`(\d{3,4})` // Capture group
-	//   const sizeT_re = String.raw`(\d{1,2}(?:[,.]\d)?)` // Capture group
-	//   const face_re = String.raw`((?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?\/(?:BB|B|CP|C|F|W) ?(?:1|2|II|I)?(?: Sanded)?)` // Capture group
-	//   const pcsQty_re = String.raw`(\d{1,3})` // Capture group
-	//   const packsQty_re = String.raw`(\d{1,2})` // Capture group
-	//   const full_regexp = new RegExp(
-	//     String.raw`${id_re}\s+${sizeA_re}\s+${sizeB_re}\s+${sizeT_re}\s+${face_re}\s+${pcsQty_re}\s+${packsQty_re}`,
-	//     'i',
-	//   )
-	//   let idNum = ''
-	//   let idCounter = 0
-	//   let itemSize = ''
-	//   let itemFace = ''
-	//   let itemGlue = ''
-	//   let itemWeight = 0
-	//   let itemPiecesCount = 0
-	//   let itemPacksCount = 1
-	//   const arrivalPlace = getArrivalPlace(TEXTrows)
-	//   const invoiceNum = getInvoiceNum(TEXTrows)
-	//   const truckNum = invoiceNum
-	//   const CMRNum = invoiceNum
-	//   TEXTrows.forEach((textrow, i) => {
-	//     const sanded = textrow.match(/^C\/C$/i)
-	//     let fixedrow = ''
-	//     if (sanded) {
-	//       const words = TEXTrows[i + 1]!.split(' ')
-	//       words.splice(4, 0, `${TEXTrows[i]?.trim()} ${TEXTrows[i + 2]?.trim()}`)
-	//       fixedrow = words.join(' ')
-	//     }
-	//     const [id, sizeA, sizeB, sizeT, face, pcsQty, packsQty] = (fixedrow || textrow).match(full_regexp) ?? []
-	//     if (id && sizeA && sizeB && sizeT && face && pcsQty && packsQty) {
-	//       idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`
-	//       itemSize = `${sizeT}x${sizeA}x${sizeB}`
-	//       itemFace = face ?? ''
-	//       itemGlue = 'WD'
-	//       itemWeight = calcWeight(`${itemSize} ${itemFace}`, +pcsQty || 0)
-	//       itemPacksCount = Number(packsQty) ?? 0
-	//       itemPiecesCount = Number(pcsQty) ?? 0
-	//       // results.push({
-	//         // id: idNum,
-	//         // timestamp: Date.now(),
-	//         // title: itemSize,
-	//         // desc: itemFace,
-	//         // note: invoiceNum,
-	//         // glue: itemGlue || `${itemWeight.toFixed(0)} kg`,
-	//         // weight: itemWeight,
-	//         // packsCount: itemPacksCount,
-	//         // piecesCount: itemPiecesCount,
-	//         // arrivalPlace: arrivalPlace,
-	//         // truckNum: truckNum,
-	//         // cmrNum: CMRNum,
-	//       // })
-	//     }
-	//   })
-	//   // console.log(results)
-	return results;
-}
+	const polishUnits: Record<string, string> = { cbm: 'm3', sqr: 'm2', pcs: 'szt' };
 
-function findDiffers(products: Product[]): Product[] {
-	products.forEach(product => {
-		const differs: ProductDiff = {};
+	//  POS      Width     Length  Thickness   Quality per   Packs                                 Price
+	//                                                                         (pcs)     (m3)    (EUR/m3)
+	//                                                          pack
+	//            1        1250       2500       9      CP/C     80     1       80      2.250     522.00   1174.50
 
-		if (product.INV?.glue !== product.PZ?.glue) differs.glue = [product.INV?.glue, product.PZ?.glue];
-		if (product.INV?.sizeT !== product.PZ?.sizeT) differs.sizeT = [product.INV?.sizeT, product.PZ?.sizeT];
-		if (product.INV?.sizeA !== product.PZ?.sizeA) differs.sizeA = [product.INV?.sizeA, product.PZ?.sizeA];
-		if (product.INV?.sizeB !== product.PZ?.sizeB) differs.sizeB = [product.INV?.sizeB, product.PZ?.sizeB];
-		if (product.INV?.face !== product.PZ?.face) differs.face = [product.INV?.face, product.PZ?.face];
-		if (product.INV?.color !== product.PZ?.color) differs.color = [product.INV?.color, product.PZ?.color];
-		if (product.INV?.quantity !== product.PZ?.quantity) differs.quantity = [product.INV?.quantity, product.PZ?.quantity];
-		if (product.INV?.quantityUnit !== product.PZ?.quantityUnit) differs.quantityUnit = [product.INV?.quantityUnit, product.PZ?.quantityUnit];
+	const itemId_re = /\d?\s{2,}/;
+	const sizeA_re = /(\d{3,4})\s{2,}/;
+	const sizeB_re = /(\d{3,4})\s{2,}/;
+	const sizeT_re = /(\d{1,2}(?:[,.]\d)?)\s{2,}/;
+	const face_re = /(.+)\s{2,}/;
+	const pcsTotal_re = /\d{1,4}\s{2,}/;
+	const packQty_re = /\d{1,2}\s{2,}/;
+	const pcsQty_re = /\d{1,3}\s{2,}/;
+	const cubicQty_re = /(\d{1,2}(?:\.\d*)?)\s{2,}/;
 
-		Object.assign(product, {
-			differs: differs,
-		});
-	});
+	const full_regexp = new RegExp(
+		combineRegex(itemId_re, sizeA_re, sizeB_re, sizeT_re, face_re, pcsTotal_re, packQty_re, pcsQty_re, cubicQty_re),
+		'i',
+	);
 
-	return products;
-}
+	let idNum = '';
+	let idCounter = 0;
+	let itemGlue = '';
+	let sourceTextOne = '';
+	let sourceTextTwo = '';
+	const invoiceNum = getInvoiceNum(textFile);
 
-function mergeProducts(products: Product[]): Product[] {
-	let mergedProducts: Product[] = [];
+	textFile.forEach((textrow, i) => {
+		const sanded = textrow.match(/^C\/C$/i);
+		let fixedrow = '';
+		if (sanded) {
+			const words = textFile[i + 1]!.split(' ');
+			words.splice(4, 0, `${textFile[i]?.trim()} ${textFile[i + 2]?.trim()}`);
+			fixedrow = words.join(' ');
+		}
+		const [, item_sizeA, item_sizeB, item_sizeT, item_face, item_cubicQty] =
+			(fixedrow || textrow).match(full_regexp) ?? [];
 
-	products.forEach(product => {
-		const existingProduct = mergedProducts.find(merge => merge.id === product.id);
-		if (!existingProduct) {
-			mergedProducts.push(product);
-		} else {
-			Object.assign(existingProduct, product);
+		console.log((fixedrow || textrow).match(full_regexp));
+
+		if (item_sizeA && item_sizeB && item_sizeT && item_face && item_cubicQty) {
+			idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`;
+			itemGlue = 'WD';
+			sourceTextOne = fixedrow || textrow;
+
+			results.push({
+				id: idNum,
+				invoiceNum: invoiceNum,
+				timestamp: Date.now(),
+				INV: {
+					glue: itemGlue,
+					sizeT: Number(item_sizeT.replace(/,/, '.')),
+					sizeA: Number(item_sizeA),
+					sizeB: Number(item_sizeB),
+					face: getFaceType(item_face),
+					color: getColor(item_face, item_face),
+					quantity: Number(item_cubicQty.replace(/,/, '.')),
+					quantityUnit: 'm3',
+					sourcetxt: `${sourceTextOne}\n${sourceTextTwo}`,
+				},
+			});
 		}
 	});
 
-	return mergedProducts;
+	console.log(results);
+	return results;
+}
+
+function findDiffers(products: Product[]): void {
+	products.forEach(item => {
+		const differs: ProductDiff = {};
+
+		if (item.INV?.glue !== item.PZ?.glue) differs.glue = [item.INV?.glue, item.PZ?.glue];
+		if (item.INV?.sizeT !== item.PZ?.sizeT) differs.sizeT = [item.INV?.sizeT, item.PZ?.sizeT];
+		if (item.INV?.sizeA !== item.PZ?.sizeA) differs.sizeA = [item.INV?.sizeA, item.PZ?.sizeA];
+		if (item.INV?.sizeB !== item.PZ?.sizeB) differs.sizeB = [item.INV?.sizeB, item.PZ?.sizeB];
+		if (item.INV?.face !== item.PZ?.face) differs.face = [item.INV?.face, item.PZ?.face];
+		if (item.INV?.color !== item.PZ?.color) differs.color = [item.INV?.color, item.PZ?.color];
+		if (item.INV?.quantity !== item.PZ?.quantity) differs.quantity = [item.INV?.quantity, item.PZ?.quantity];
+		if (item.INV?.quantityUnit !== item.PZ?.quantityUnit)
+			differs.quantityUnit = [item.INV?.quantityUnit, item.PZ?.quantityUnit];
+
+		Object.assign(item, {
+			differs: differs,
+		});
+
+		useProductStore().updateProduct(item.id, item);
+	});
+}
+
+function saveToProductStore(products: Product[]): void {
+	products.forEach(product => {
+		useProductStore().products.find(p => p.id === product.id)
+			? useProductStore().updateProduct(product.id, product)
+			: useProductStore().addProduct(product);
+	});
 }
 
 function getArrivalPlace(text_rows: string[]): string {
@@ -536,7 +544,11 @@ function getColor(text: string, faceType: string): string {
 		class="btn-primary"
 		type="button"
 		@click="openFile">
-		<slot>Dodaj PDF</slot>
+		<slot>Dodaj PDF</slot
+		><span
+			v-if="isWorking"
+			class="spinner"></span>
+
 		<input
 			ref="fileInput"
 			type="file"
@@ -550,7 +562,23 @@ function getColor(text: string, faceType: string): string {
 input[type='file'] {
 	display: none;
 }
+
 label[for='PDFupload-button'] {
 	cursor: pointer;
+}
+
+.spinner {
+	width: 24px;
+	height: 24px;
+	border: 3px solid #ddd;
+	border-top-color: var(--action-color-normal, #3498db);
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
 }
 </style>
