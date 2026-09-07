@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MyApps from '@/components/MyApps.vue';
+import TestCodes from '@/components/TestCodes.vue';
 import UploadPDF from '@/components/Btn_PDFUpload.vue';
 import { useProductStore } from '@/stores/products_store';
 import type { Product, ProductDiff } from '@/types/shared_types';
@@ -13,6 +14,8 @@ function hasDiffers(product: Product): boolean {
 	<header class="noprint">
 		<p><MyApps /></p>
 		<h1>Tester Przyjęć</h1>
+
+		<TestCodes />
 	</header>
 
 	<main>
@@ -24,7 +27,10 @@ function hasDiffers(product: Product): boolean {
 			Błędów: {{ useProductStore().products.filter(p => hasDiffers(p)).length }}/{{ useProductStore().products.length }}
 		</h3>
 
-		<ul v-for="p in useProductStore().products" :key="p.id" :class="{ correctItems: !hasDiffers(p) }">
+		<ul
+			v-for="p in useProductStore().products"
+			:key="p.id"
+			:class="{ correctItems: !hasDiffers(p) }">
 			<li>
 				<strong>{{ p.id.split('_')[1] }}.</strong> {{ p.invoiceNum }} <strong>/</strong> {{ p.PZnum }}
 				<strong>/</strong>
@@ -35,7 +41,11 @@ function hasDiffers(product: Product): boolean {
 				<u class="invalid">Brak faktury</u>
 			</li>
 			<li v-else>
-				<i class="more-info" :title="p.INV.sourcetxt">?</i>
+				<i
+					class="more-info"
+					:title="p.INV.sourcetxt"
+					>?</i
+				>
 				<u :class="{ valid: p.PZ && p.differs?.glue }">{{ p.INV?.glue }}</u>
 				<span> </span>
 				<u :class="{ valid: p.PZ && p.differs?.sizeT }">{{ p.INV?.sizeT }}</u>
@@ -57,7 +67,11 @@ function hasDiffers(product: Product): boolean {
 				<u class="invalid">Brak Przyjęcia</u>
 			</li>
 			<li v-else>
-				<i class="more-info" :title="p.PZ.sourcetxt">?</i>
+				<i
+					class="more-info"
+					:title="p.PZ.sourcetxt"
+					>?</i
+				>
 				<u :class="{ invalid: p.INV && p.differs?.glue }">{{ p.PZ?.glue }}</u>
 				<span> </span>
 				<u :class="{ invalid: p.INV && p.differs?.sizeT }">{{ p.PZ?.sizeT }}</u>
@@ -81,7 +95,9 @@ function hasDiffers(product: Product): boolean {
 		<p>Wszelkie prawa zastrzeżone - Paweł Ryszkowski</p>
 		<p>
 			Uwagi i pomoc techniczna:
-			<a href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205" target="_blank"
+			<a
+				href="mailto:pawrys.kontakt@gmail.com?subject=Pomoc%20Stock%20Browser%205"
+				target="_blank"
 				>pawrys.kontakt@gmail.com</a
 			>
 			<span> - </span>
