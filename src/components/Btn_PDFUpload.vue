@@ -215,7 +215,7 @@ function getLatvijasProducts(textFile: string[]): Product[] {
 	const sizeT_re = /(\d{1,2}(?:[,.]\d)?)x/;
 	const sizeA_re = /(\d{3,4})x/;
 	const sizeB_re = /(\d{3,4}) mm\s+/;
-	const packing_re = /(\d{1,2}x\d{1,3})\s+/;
+	const packing_re = /(\d{1,2}x\d{1,3});?\s+/;
 	const quantity_re = /(\d{1,4}(?:[,.]\d{1,3})?)\s+/;
 	const quantityUnit_re = /(cbm|sqr|pcs)/;
 	const full_regexp = new RegExp(
@@ -386,10 +386,21 @@ function saveToProductStore(products: Product[]): void {
 </script>
 
 <template>
-	<button class="btn-primary" type="button" @click="openFile">
-		<slot>Dodaj PDF</slot><span v-if="isWorking" class="spinner"></span>
+	<button
+		class="btn-primary"
+		type="button"
+		@click="openFile">
+		<slot>Dodaj PDF</slot
+		><span
+			v-if="isWorking"
+			class="spinner"></span>
 
-		<input ref="fileInput" type="file" multiple hidden @change="doit" />
+		<input
+			ref="fileInput"
+			type="file"
+			multiple
+			hidden
+			@change="doit" />
 	</button>
 </template>
 
