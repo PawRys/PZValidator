@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import stany_m3 from '@/exports/stany_m3.txt?raw';
-import stany_m2 from '@/exports/stany_m2.txt?raw';
-import stany_szt from '@/exports/stany_szt.txt?raw';
+import stany_m3 from '@/exports/stany_m3_b.txt?raw';
+import stany_m2 from '@/exports/stany_m2_b.txt?raw';
+import stany_szt from '@/exports/stany_szt_b.txt?raw';
 
 type CodeParams = {
 	code_format: string | null;
