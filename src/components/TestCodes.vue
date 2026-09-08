@@ -5,67 +5,157 @@ import stany_szt from '@/exports/stany_szt.txt?raw';
 import { ref, onMounted } from 'vue';
 
 type CodeParams = {
-	size: Set<string>;
-	m3_calc: Set<number>;
-	m2_calc: Set<number>;
-	szt_calc: Set<number>;
+	code_format: string | null;
+	desc_format: string | null;
+	calc_m3: Set<number>;
+	calc_m2: Set<number>;
+	calc_szt: Set<number>;
+	onePiece_m3: number;
+	onePiece_m2: number;
+	error_m3?: boolean;
+	error_m2?: boolean;
+	error_szt?: boolean;
+	error_format?: boolean;
 };
 
 const files = [stany_m3, stany_m2, stany_szt];
+const processed = processData(files);
+findErrors(processed);
 
-const data = processData();
-findConflicts(data);
+async function processData(files: any) {
+	const result = new Map<string, CodeParams>();
 
-async function processData() {
-	const dataMap = new Map<string, CodeParams>();
-	const sizeMap = await fetch('https://raw.githubusercontent.com/PawRys/shared-assets/master/smetek-kody.json').then(
-		r => r.json(),
-	);
+	for (const file of files) {
+		for (const row of file.split(/\r?\n/)) {
+			const [col_id, col_desc, col_unit, col_quantity, col_price, col_value] = row.split(/\t+/);
 
-	files.forEach(file => {
-		file.split('\n').forEach(row => {
-			const [col_id, col_desc, col_unit, col_quantity, col_price, col_value] = row.split(/\t+/i);
-			const quantity = Number(col_quantity?.replace(',', '.'));
-			const unit = col_unit as 'm3' | 'm2' | 'szt';
-
-			if (quantity && col_id && col_desc && col_unit && col_quantity && col_price && col_value) {
+			if (col_id && col_desc && col_unit && col_quantity && col_price && col_value) {
 				const hasCode = /(\d{2,3})s(\d{2})\/(\d{2,3})/i.test(col_id);
 				const hasSize = /\d{1,2}(?:[,.]\d{1,2})?x\d{3,4}x\d{3,4}/i.test(col_desc);
-				const getCode = col_id.match(/(\d{2,3})s(\d{2})\/(\d{2,3})/i) ?? [];
-				const getSize = col_desc.match(/\d{1,2}(?:[,.]\d{1,2})?x\d{3,4}x\d{3,4}/i)!;
-				const [t, a, b] = getSize[0].replace(',', '.').split('x').map(Number) as [number, number, number];
-				const sizeFromCode = `${Number(getCode[1])}x${sizeMap[getCode[3]!]}`;
-				const sizeFromDesc = `${t}x${a}x${b}`;
-				let params = dataMap.get(col_id);
+				const quantity = Number(col_quantity?.replace(',', '.'));
+				const unit = col_unit as 'm3' | 'm2' | 'szt';
 
-				if (!params) {
-					params = {
-						size: new Set(),
-						m3_calc: new Set(),
-						m2_calc: new Set(),
-						szt_calc: new Set(),
-					};
+				if (hasCode || hasSize) {
+					const formatFromCode = hasCode ? await getFormatFromCode(col_id) : null;
+					const formatFromDesc = hasSize ? getFormatFromDesc(col_desc) : null;
+					const calcFormat = formatFromDesc || formatFromCode!;
 
-					dataMap.set(col_id, params);
+					let params = result.get(col_id);
+
+					if (!params) {
+						params = {
+							code_format: null,
+							desc_format: null,
+							calc_m3: new Set(),
+							calc_m2: new Set(),
+							calc_szt: new Set(),
+							onePiece_m3: 0,
+							onePiece_m2: 0,
+						};
+					}
+
+					const m3 = calcQuant(calcFormat, quantity, unit, 'm3');
+					const m2 = calcQuant(calcFormat, quantity, unit, 'm2');
+					const szt = calcQuant(calcFormat, quantity, unit, 'szt');
+
+					params.code_format = formatFromCode;
+					params.desc_format = formatFromDesc;
+					params.calc_m3.add(Math.round(m3 * 10000) / 10000);
+					params.calc_m2.add(Math.round(m2 * 10000) / 10000);
+					params.calc_szt.add(Math.round(szt * 10000) / 10000);
+					params.onePiece_m3 = calcQuant(calcFormat, 1, 'szt', 'm3');
+					params.onePiece_m2 = calcQuant(calcFormat, 1, 'szt', 'm2');
+
+					result.set(col_id, params);
 				}
-
-				params.size.add(sizeFromCode);
-				params.size.add(sizeFromDesc);
-				params.m3_calc.add(calcQuant(sizeFromCode || sizeFromDesc, quantity, unit, 'm3'));
-				params.m2_calc.add(calcQuant(sizeFromCode || sizeFromDesc, quantity, unit, 'm2'));
-				params.szt_calc.add(calcQuant(sizeFromCode || sizeFromDesc, quantity, unit, 'szt'));
 			}
-		});
-	});
+		}
+	}
 
-	// console.log(dataMap);
-	return dataMap;
+	// console.log(result);
+	return result;
 }
 
-function findConflicts(data) {
-	return data.map(item => {
-		console.log(item);
-	});
+// async function findErrors(data: Promise<Map<string, CodeParams>>) {
+// 	const map = await data;
+// 	const result = new Map(
+// 		[...map].filter(([key, p]) => {
+// 			const diff_m3 = Math.max(...p.calc_m3) - Math.min(...p.calc_m3);
+// 			const diff_m2 = Math.max(...p.calc_m2) - Math.min(...p.calc_m2);
+// 			const diff_szt = Math.max(...p.calc_szt) - Math.min(...p.calc_szt);
+// 			const wrongFactor_m3 = diff_m3 > p.onePiece_m3 ? true : false;
+// 			const wrongFactor_m2 = diff_m2 > p.onePiece_m2 ? true : false;
+// 			const wrongFactor_szt = diff_szt > 1 ? true : false;
+// 			const wrongSizeDesc =
+// 				p.code_format != null && p.desc_format != null && p.code_format !== p.desc_format ? true : false;
+
+// 			if (wrongFactor_m3 || wrongFactor_m2 || wrongFactor_szt || wrongSizeDesc) {
+// 				console.log(key, p);
+// 				return true;
+// 			}
+// 		}),
+// 	);
+
+// 	// console.log(result);
+// }
+
+async function findErrors(data: Promise<Map<string, CodeParams>>) {
+	const map = await data;
+
+	const result = new Map<string, CodeParams>();
+
+	for (const [key, p] of map) {
+		const diff_m3 = p.calc_m3.size > 0 ? Math.max(...p.calc_m3) - Math.min(...p.calc_m3) : 0;
+		const diff_m2 = p.calc_m2.size > 0 ? Math.max(...p.calc_m2) - Math.min(...p.calc_m2) : 0;
+		const diff_szt = p.calc_szt.size > 0 ? Math.max(...p.calc_szt) - Math.min(...p.calc_szt) : 0;
+
+		const wrongFactor_m3 = diff_m3 > p.onePiece_m3;
+		const wrongFactor_m2 = diff_m2 > p.onePiece_m2;
+		const wrongFactor_szt = diff_szt > 1;
+		const wrongSizeDesc = p.code_format != null && p.desc_format != null && p.code_format !== p.desc_format;
+
+		p.error_m3 = wrongFactor_m3;
+		p.error_m2 = wrongFactor_m2;
+		p.error_szt = wrongFactor_szt;
+		p.error_format = wrongSizeDesc;
+
+		const hasError = wrongFactor_m3 || wrongFactor_m2 || wrongFactor_szt || wrongSizeDesc;
+
+		if (hasError) {
+			console.log(key, p);
+			result.set(key, p);
+		}
+	}
+	console.log(result);
+	return result;
+}
+
+async function getFormatFromCode(text: string): Promise<string> {
+	const smetek_kody = await fetch(
+		'https://raw.githubusercontent.com/PawRys/shared-assets/master/smetek-kody.json',
+	).then(r => r.json());
+
+	let result = '';
+
+	const matching = text.match(/(\d{2,3})s(\d{2})\/(\d{2,3})/i) ?? [];
+	if (matching.length === 4) {
+		const thickFromCode = matching[1]!.length > 2 ? Number(matching[1]) / 10 : Number(matching[1]);
+		result = `${thickFromCode}x${smetek_kody[matching[3]!]}`;
+	}
+
+	return result;
+}
+
+function getFormatFromDesc(text: string): string {
+	let result = '';
+	const matching = text.match(/(\d{1,2}(?:[,.]\d{1,2})?)x(\d{3,4})x(\d{3,4})/i) ?? [];
+
+	if (matching.length === 4) {
+		const [t, a, b] = matching[0].replace(',', '.').split('x').map(Number) as [string, number, number];
+		result = `${t}x${a}x${b}`;
+	}
+
+	return result;
 }
 
 function calcQuant(size: string, value: number, from: 'm3' | 'm2' | 'szt', to: 'm3' | 'm2' | 'szt'): number {
