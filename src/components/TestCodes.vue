@@ -2,6 +2,12 @@
 import stany_m3 from '@/exports/stany_m3_b.txt?raw';
 import stany_m2 from '@/exports/stany_m2_b.txt?raw';
 import stany_szt from '@/exports/stany_szt_b.txt?raw';
+import { ref } from 'vue';
+
+const data_m3 = ref('');
+const data_m2 = ref('');
+const data_szt = ref('');
+const data_errors = ref([]);
 
 type CodeParams = {
 	code_format: string | null;
@@ -16,10 +22,6 @@ type CodeParams = {
 	error_szt?: boolean;
 	error_format?: boolean;
 };
-
-const files = [stany_m3, stany_m2, stany_szt];
-const processed = processData(files);
-findErrors(processed);
 
 async function processData(files: any) {
 	const result = new Map<string, CodeParams>();
@@ -102,11 +104,11 @@ async function findErrors(data: Promise<Map<string, CodeParams>>) {
 		const hasError = wrongFactor_m3 || wrongFactor_m2 || wrongFactor_szt || wrongSizeDesc;
 
 		if (hasError) {
-			console.log(key, p);
+			// console.log(key, p);
 			result.set(key, p);
 		}
 	}
-	// console.log(result);
+	console.log(result);
 	return result;
 }
 
@@ -159,8 +161,57 @@ function calcQuant(size: string, value: number, from: 'm3' | 'm2' | 'szt', to: '
 
 	return value;
 }
+
+function loadData(event: Event) {
+	const val = (event.target as HTMLTextAreaElement).value;
+	const findUnits = ['m3', 'm2', 'szt'];
+	const topOccur = findUnits
+		.map(unit => ({
+			unit: unit,
+			count: (val.match(new RegExp(unit, 'g')) || []).length,
+		}))
+		.reduce((a, b) => (a.count > b.count ? a : b));
+
+	if (topOccur.unit === 'm3') data_m3.value = val;
+	if (topOccur.unit === 'm2') data_m2.value = val;
+	if (topOccur.unit === 'szt') data_szt.value = val;
+	(event.target as HTMLTextAreaElement).value = '';
+
+	if (data_m3.value && data_m2.value && data_szt.value) {
+		const files = [data_m3.value, data_m2.value, data_szt.value];
+		const processed = processData(files);
+		data_errors.value = findErrors(processed);
+	}
+
+	// console.log(topOccur);
+}
 </script>
 
-<template></template>
+<template>
+	<section>
+		<div id="data-indicator">
+			<ul>
+				<ol>
+					<span v-if="!data_m3">Załaduj stany w m3</span>
+					<span v-else>Załadowano m3</span>
+				</ol>
+
+				<ol>
+					<span v-if="!data_m2">Załaduj stany w m2</span>
+					<span v-else>Załadowano m2</span>
+				</ol>
+
+				<ol>
+					<span v-if="!data_szt">Załaduj stany w szt</span>
+					<span v-else>Załadowano szt</span>
+				</ol>
+			</ul>
+		</div>
+
+		<div id="data-drop">
+			<textarea name="" id="" placeholder="tu wklej stany" @input="loadData"></textarea>
+		</div>
+	</section>
+</template>
 
 <style scoped></style>
