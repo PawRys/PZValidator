@@ -2,7 +2,6 @@
 import stany_m3 from '@/exports/stany_m3.txt?raw';
 import stany_m2 from '@/exports/stany_m2.txt?raw';
 import stany_szt from '@/exports/stany_szt.txt?raw';
-import { ref, onMounted } from 'vue';
 
 type CodeParams = {
 	code_format: string | null;
@@ -24,6 +23,9 @@ findErrors(processed);
 
 async function processData(files: any) {
 	const result = new Map<string, CodeParams>();
+	const smetek_kody = await fetch(
+		'https://raw.githubusercontent.com/PawRys/shared-assets/master/smetek-kody.json',
+	).then(r => r.json());
 
 	for (const file of files) {
 		for (const row of file.split(/\r?\n/)) {
@@ -36,9 +38,9 @@ async function processData(files: any) {
 				const unit = col_unit as 'm3' | 'm2' | 'szt';
 
 				if (hasCode || hasSize) {
-					const formatFromCode = hasCode ? await getFormatFromCode(col_id) : null;
+					const formatFromCode = hasCode ? await getFormatFromCode(col_id, smetek_kody) : null;
 					const formatFromDesc = hasSize ? getFormatFromDesc(col_desc) : null;
-					const calcFormat = formatFromDesc || formatFromCode!;
+					const calcFormat = formatFromCode! || formatFromDesc!;
 
 					let params = result.get(col_id);
 
@@ -76,29 +78,6 @@ async function processData(files: any) {
 	return result;
 }
 
-// async function findErrors(data: Promise<Map<string, CodeParams>>) {
-// 	const map = await data;
-// 	const result = new Map(
-// 		[...map].filter(([key, p]) => {
-// 			const diff_m3 = Math.max(...p.calc_m3) - Math.min(...p.calc_m3);
-// 			const diff_m2 = Math.max(...p.calc_m2) - Math.min(...p.calc_m2);
-// 			const diff_szt = Math.max(...p.calc_szt) - Math.min(...p.calc_szt);
-// 			const wrongFactor_m3 = diff_m3 > p.onePiece_m3 ? true : false;
-// 			const wrongFactor_m2 = diff_m2 > p.onePiece_m2 ? true : false;
-// 			const wrongFactor_szt = diff_szt > 1 ? true : false;
-// 			const wrongSizeDesc =
-// 				p.code_format != null && p.desc_format != null && p.code_format !== p.desc_format ? true : false;
-
-// 			if (wrongFactor_m3 || wrongFactor_m2 || wrongFactor_szt || wrongSizeDesc) {
-// 				console.log(key, p);
-// 				return true;
-// 			}
-// 		}),
-// 	);
-
-// 	// console.log(result);
-// }
-
 async function findErrors(data: Promise<Map<string, CodeParams>>) {
 	const map = await data;
 
@@ -109,9 +88,10 @@ async function findErrors(data: Promise<Map<string, CodeParams>>) {
 		const diff_m2 = p.calc_m2.size > 0 ? Math.max(...p.calc_m2) - Math.min(...p.calc_m2) : 0;
 		const diff_szt = p.calc_szt.size > 0 ? Math.max(...p.calc_szt) - Math.min(...p.calc_szt) : 0;
 
-		const wrongFactor_m3 = diff_m3 > p.onePiece_m3;
-		const wrongFactor_m2 = diff_m2 > p.onePiece_m2;
-		const wrongFactor_szt = diff_szt > 1;
+		const precision = 0.1;
+		const wrongFactor_m3 = diff_m3 > p.onePiece_m3 * precision;
+		const wrongFactor_m2 = diff_m2 > p.onePiece_m2 * precision;
+		const wrongFactor_szt = diff_szt > 1 * precision;
 		const wrongSizeDesc = p.code_format != null && p.desc_format != null && p.code_format !== p.desc_format;
 
 		p.error_m3 = wrongFactor_m3;
@@ -126,21 +106,17 @@ async function findErrors(data: Promise<Map<string, CodeParams>>) {
 			result.set(key, p);
 		}
 	}
-	console.log(result);
+	// console.log(result);
 	return result;
 }
 
-async function getFormatFromCode(text: string): Promise<string> {
-	const smetek_kody = await fetch(
-		'https://raw.githubusercontent.com/PawRys/shared-assets/master/smetek-kody.json',
-	).then(r => r.json());
-
+async function getFormatFromCode(text: string, codes: any): Promise<string> {
 	let result = '';
 
 	const matching = text.match(/(\d{2,3})s(\d{2})\/(\d{2,3})/i) ?? [];
 	if (matching.length === 4) {
 		const thickFromCode = matching[1]!.length > 2 ? Number(matching[1]) / 10 : Number(matching[1]);
-		result = `${thickFromCode}x${smetek_kody[matching[3]!]}`;
+		result = `${thickFromCode}x${codes[matching[3]!]}`;
 	}
 
 	return result;
