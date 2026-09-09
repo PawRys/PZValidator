@@ -119,6 +119,7 @@ function hasDiffers(product: Product): boolean {
 strong {
 	font-weight: 700;
 }
+
 ul {
 	padding: 0;
 }
@@ -151,31 +152,6 @@ u {
 	aspect-ratio: 1;
 	height: 1em;
 	font-family: 'Teko';
-}
-
-.valid,
-.invalid {
-	margin-inline: 0.2em;
-	padding-inline: 0.2em;
-	outline-style: auto;
-	outline-width: 1px;
-	outline-offset: 1px;
-	/* text-decoration-color: green;
-	text-decoration-thickness: 3px;
-	text-decoration-line: underline;
-	text-decoration-style: solid; */
-}
-
-.valid {
-	background-color: palegreen;
-	outline-color: green;
-	/* text-decoration-style: solid; */
-}
-
-.invalid {
-	background-color: pink;
-	outline-color: crimson;
-	/* text-decoration-color: crimson; */
 }
 
 .full-desc {

@@ -24,3 +24,33 @@ body {
 ::selection {
 	background-color: var(--font-color-selected);
 }
+
+.info,
+.valid,
+.invalid {
+	text-decoration: none;
+	margin-inline: 0.2em;
+	padding-inline: 0.2em;
+	outline-style: auto;
+	outline-width: 1px;
+	outline-offset: 0px;
+	/* text-decoration-color: green;
+	text-decoration-thickness: 3px;
+	text-decoration-line: underline;
+	text-decoration-style: solid; */
+}
+
+.info {
+	background-color: lightskyblue;
+	outline-color: royalblue;
+}
+
+.valid {
+	background-color: palegreen;
+	outline-color: green;
+}
+
+.invalid {
+	background-color: pink;
+	outline-color: crimson;
+}

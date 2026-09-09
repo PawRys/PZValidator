@@ -7,7 +7,7 @@ import { ref } from 'vue';
 const data_m3 = ref('');
 const data_m2 = ref('');
 const data_szt = ref('');
-const data_errors = ref([]);
+const data_errors = ref<Map<string, CodeParams>>(new Map());
 
 type CodeParams = {
 	code_format: string | null;
@@ -42,7 +42,8 @@ async function processData(files: any) {
 				if (hasCode || hasSize) {
 					const formatFromCode = hasCode ? await getFormatFromCode(col_id, smetek_kody) : null;
 					const formatFromDesc = hasSize ? getFormatFromDesc(col_desc) : null;
-					const calcFormat = formatFromCode! || formatFromDesc!;
+					// const calcFormat = formatFromCode! || formatFromDesc!;
+					const calcFormat = formatFromDesc! || formatFromCode!;
 
 					let params = result.get(col_id);
 
@@ -162,7 +163,7 @@ function calcQuant(size: string, value: number, from: 'm3' | 'm2' | 'szt', to: '
 	return value;
 }
 
-function loadData(event: Event) {
+async function loadData(event: Event) {
 	const val = (event.target as HTMLTextAreaElement).value;
 	const findUnits = ['m3', 'm2', 'szt'];
 	const topOccur = findUnits
@@ -180,7 +181,7 @@ function loadData(event: Event) {
 	if (data_m3.value && data_m2.value && data_szt.value) {
 		const files = [data_m3.value, data_m2.value, data_szt.value];
 		const processed = processData(files);
-		data_errors.value = findErrors(processed);
+		data_errors.value = await findErrors(processed);
 	}
 
 	// console.log(topOccur);
@@ -193,25 +194,50 @@ function loadData(event: Event) {
 			<ul>
 				<ol>
 					<span v-if="!data_m3">Załaduj stany w m3</span>
-					<span v-else>Załadowano m3</span>
+					<span v-else>Załadowano m3 ✅</span>
 				</ol>
 
 				<ol>
 					<span v-if="!data_m2">Załaduj stany w m2</span>
-					<span v-else>Załadowano m2</span>
+					<span v-else>Załadowano m2 ✅</span>
 				</ol>
 
 				<ol>
 					<span v-if="!data_szt">Załaduj stany w szt</span>
-					<span v-else>Załadowano szt</span>
+					<span v-else>Załadowano szt ✅</span>
 				</ol>
 			</ul>
 		</div>
 
 		<div id="data-drop">
-			<textarea name="" id="" placeholder="tu wklej stany" @input="loadData"></textarea>
+			<textarea
+				name=""
+				id=""
+				placeholder="tu wklej stany"
+				@input="loadData"></textarea>
+		</div>
+
+		<div id="show-results">
+			<dl
+				v-for="[item, params] in data_errors"
+				:key="item">
+				<dt>
+					<h5>{{ item }}</h5>
+				</dt>
+				<dd v-if="params.error_format">
+					<b>Błąd formatu.</b> Format z kodu: <u class="valid">{{ params.code_format }}</u> Format z opisu:
+					<u class="invalid">{{ params.desc_format }}</u>
+				</dd>
+				<dd v-if="params.error_m3 || params.error_m2 || params.error_szt">
+					<b>Błąd przelicznika.</b> Format liczony z: <u class="info">{{ params.desc_format || params.code_format }}</u>
+				</dd>
+			</dl>
 		</div>
 	</section>
 </template>
 
-<style scoped></style>
+<style scoped>
+dt {
+	margin-top: 2rem;
+}
+</style>
