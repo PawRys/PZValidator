@@ -10,8 +10,9 @@ const data_szt = ref('');
 const data_errors = ref<Map<string, CodeParams>>(new Map());
 
 type CodeParams = {
-	code_format: string | null;
-	desc_format: string | null;
+	format_code?: string | null;
+	size_code: string | null;
+	size_desc: string | null;
 	calc_m3: Set<number>;
 	calc_m2: Set<number>;
 	calc_szt: Set<number>;
@@ -40,17 +41,18 @@ async function processData(files: any) {
 				const unit = col_unit as 'm3' | 'm2' | 'szt';
 
 				if (hasCode || hasSize) {
-					const formatFromCode = hasCode ? await getFormatFromCode(col_id, smetek_kody) : null;
-					const formatFromDesc = hasSize ? getFormatFromDesc(col_desc) : null;
+					const formatCode = hasCode ? getFormatCode(col_id) : null;
+					const sizeFromCode = hasCode ? await getSizeFromCode(col_id, smetek_kody) : null;
+					const sizeFromDesc = hasSize ? getSizeFromDesc(col_desc) : null;
 					// const calcFormat = formatFromCode! || formatFromDesc!;
-					const calcFormat = formatFromDesc! || formatFromCode!;
+					const calcSize = sizeFromDesc! || sizeFromCode!;
 
 					let params = result.get(col_id);
 
 					if (!params) {
 						params = {
-							code_format: null,
-							desc_format: null,
+							size_code: null,
+							size_desc: null,
 							calc_m3: new Set(),
 							calc_m2: new Set(),
 							calc_szt: new Set(),
@@ -59,17 +61,18 @@ async function processData(files: any) {
 						};
 					}
 
-					const m3 = calcQuant(calcFormat, quantity, unit, 'm3');
-					const m2 = calcQuant(calcFormat, quantity, unit, 'm2');
-					const szt = calcQuant(calcFormat, quantity, unit, 'szt');
+					const m3 = calcQuant(calcSize, quantity, unit, 'm3');
+					const m2 = calcQuant(calcSize, quantity, unit, 'm2');
+					const szt = calcQuant(calcSize, quantity, unit, 'szt');
 
-					params.code_format = formatFromCode;
-					params.desc_format = formatFromDesc;
+					params.format_code = formatCode;
+					params.size_code = sizeFromCode;
+					params.size_desc = sizeFromDesc;
 					params.calc_m3.add(Math.round(m3 * 10000) / 10000);
 					params.calc_m2.add(Math.round(m2 * 10000) / 10000);
 					params.calc_szt.add(Math.round(szt * 10000) / 10000);
-					params.onePiece_m3 = calcQuant(calcFormat, 1, 'szt', 'm3');
-					params.onePiece_m2 = calcQuant(calcFormat, 1, 'szt', 'm2');
+					params.onePiece_m3 = calcQuant(calcSize, 1, 'szt', 'm3');
+					params.onePiece_m2 = calcQuant(calcSize, 1, 'szt', 'm2');
 
 					result.set(col_id, params);
 				}
@@ -95,7 +98,7 @@ async function findErrors(data: Promise<Map<string, CodeParams>>) {
 		const wrongFactor_m3 = diff_m3 > p.onePiece_m3 * precision;
 		const wrongFactor_m2 = diff_m2 > p.onePiece_m2 * precision;
 		const wrongFactor_szt = diff_szt > 1 * precision;
-		const wrongSizeDesc = p.code_format != null && p.desc_format != null && p.code_format !== p.desc_format;
+		const wrongSizeDesc = p.size_code != null && p.size_desc != null && p.size_code !== p.size_desc;
 
 		p.error_m3 = wrongFactor_m3;
 		p.error_m2 = wrongFactor_m2;
@@ -113,7 +116,18 @@ async function findErrors(data: Promise<Map<string, CodeParams>>) {
 	return result;
 }
 
-async function getFormatFromCode(text: string, codes: any): Promise<string> {
+function getFormatCode(text: string): string {
+	let result = '';
+
+	const matching = text.match(/(\d{2,3})s(\d{2})\/(\d{2,3})/i) ?? [];
+	if (matching.length === 4) {
+		result = matching[3]!;
+	}
+
+	return result;
+}
+
+async function getSizeFromCode(text: string, codes: any): Promise<string> {
 	let result = '';
 
 	const matching = text.match(/(\d{2,3})s(\d{2})\/(\d{2,3})/i) ?? [];
@@ -125,7 +139,7 @@ async function getFormatFromCode(text: string, codes: any): Promise<string> {
 	return result;
 }
 
-function getFormatFromDesc(text: string): string {
+function getSizeFromDesc(text: string): string {
 	let result = '';
 	const matching = text.match(/(\d{1,2}(?:[,.]\d{1,2})?)x(\d{3,4})x(\d{3,4})/i) ?? [];
 
@@ -189,55 +203,73 @@ async function loadData(event: Event) {
 </script>
 
 <template>
-	<section>
-		<div id="data-indicator">
-			<ul>
-				<ol>
-					<span v-if="!data_m3">Załaduj stany w m3</span>
-					<span v-else>Załadowano m3 ✅</span>
-				</ol>
+	<main id="factor_tester">
+		<h1>Tester Przeliczników</h1>
 
-				<ol>
-					<span v-if="!data_m2">Załaduj stany w m2</span>
-					<span v-else>Załadowano m2 ✅</span>
-				</ol>
+		<p id="factor_tester-instruction">
+			W celu sprawdzenia przeliczników należy wkleić stany we wszystkich jednostkach (m3, m2, szt). Przeliczniki można
+			przetestować jedynie na pozycjach z niezerowymi ilościami.
+		</p>
 
-				<ol>
-					<span v-if="!data_szt">Załaduj stany w szt</span>
-					<span v-else>Załadowano szt ✅</span>
-				</ol>
-			</ul>
+		<div id="factor_tester-indicator">
+			<div v-if="!data_m3">Załaduj stany w m3</div>
+			<div v-else>Załadowano m3 ✅</div>
+
+			<div v-if="!data_m2">Załaduj stany w m2</div>
+			<div v-else>Załadowano m2 ✅</div>
+
+			<div v-if="!data_szt">Załaduj stany w szt</div>
+			<div v-else>Załadowano szt ✅</div>
 		</div>
 
-		<div id="data-drop">
+		<div id="factor_tester-input">
 			<textarea
-				name=""
-				id=""
-				placeholder="tu wklej stany"
+				class="action"
+				placeholder="Tu wklej stany"
 				@input="loadData"></textarea>
 		</div>
 
-		<div id="show-results">
+		<div id="factor_tester-results">
 			<dl
-				v-for="[item, params] in data_errors"
+				v-for="[item, p] in data_errors"
 				:key="item">
 				<dt>
 					<h5>{{ item }}</h5>
 				</dt>
-				<dd v-if="params.error_format">
-					<b>Błąd formatu.</b> Format z kodu: <u class="valid">{{ params.code_format }}</u> Format z opisu:
-					<u class="invalid">{{ params.desc_format }}</u>
+				<dd v-if="p.error_format">
+					<b>Błąd formatu.</b> Popraw opis z: <u class="invalid">{{ p.size_desc }}</u> na:
+					<u class="valid">{{ p.size_code }}</u> (kod: /{{ p.format_code }})
 				</dd>
-				<dd v-if="params.error_m3 || params.error_m2 || params.error_szt">
-					<b>Błąd przelicznika.</b> Format liczony z: <u class="info">{{ params.desc_format || params.code_format }}</u>
+				<dd v-if="p.error_m3 || p.error_m2 || p.error_szt">
+					<b>Błąd przelicznika.</b> Sprawdź przeliczniki. Test liczony z:
+					<u class="info">{{ p.size_desc || p.size_code }}</u>
 				</dd>
 			</dl>
 		</div>
-	</section>
+	</main>
 </template>
 
 <style scoped>
 dt {
 	margin-top: 2rem;
+}
+
+#factor_tester {
+	display: grid;
+	gap: var(--s-8);
+	grid-template-columns: auto 1fr;
+	align-content: start;
+	justify-content: center;
+}
+
+#factor_tester-input textarea {
+	width: 100%;
+	height: 100%;
+}
+
+h1,
+#factor_tester-instruction,
+#factor_tester-results {
+	grid-column: span 2;
 }
 </style>
