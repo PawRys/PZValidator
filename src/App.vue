@@ -25,9 +25,9 @@ const displayComponent = ref(TestInvoice);
 		</div>
 	</header>
 
-	<Persist>
+	<KeepAlive>
 		<component :is="displayComponent" />
-	</Persist>
+	</KeepAlive>
 
 	<footer class="noprint">
 		<p>Wszelkie prawa zastrzeżone - Paweł Ryszkowski</p>
