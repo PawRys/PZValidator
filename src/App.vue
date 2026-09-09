@@ -15,7 +15,7 @@ function hasDiffers(product: Product): boolean {
 		<p><MyApps /></p>
 		<h1>Tester Przyjęć</h1>
 
-		<TestCodes />
+		<!-- <TestCodes /> -->
 	</header>
 
 	<main>

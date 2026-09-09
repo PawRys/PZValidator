@@ -236,7 +236,7 @@ function getLatvijasProducts(textFile: string[]): Product[] {
 	const CMRNum = getCMRNum(textFile);
 
 	textFile.forEach(textrow => {
-		if (/Birch plywood|KILO\/KILO|PQ\/PQ/.test(textrow)) {
+		if (/Birch plywood|441233[0-9]{2}/.test(textrow)) {
 			const declutered_text = textrow
 				.replace(/Birch plywood RIGA |PLY|TEX|FORM|MEL|/gi, '')
 				.replace(/, edges sealed .*|,[^,]*441233[0-9]{2}.*/gi, '')
