@@ -27,6 +27,10 @@ function hasDiffers(product: Product): boolean {
 			Błędów: {{ useProductStore().products.filter(p => hasDiffers(p)).length }}/{{ useProductStore().products.length }}
 		</h3>
 
+		<h3 v-if="useProductStore().products.length && useProductStore().products.filter(p => hasDiffers(p)).length === 0">
+			Wszystko git 👍
+		</h3>
+
 		<ul
 			v-for="p in useProductStore().products"
 			:key="p.id"
