@@ -29,7 +29,7 @@ button.ghost {
 }
 
 button.action {
-	border: solid var(--button-border-width) var(--action-color-normal);
+	border: solid 2px var(--action-color-normal);
 }
 
 button.small {
