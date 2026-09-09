@@ -325,7 +325,7 @@ function getStigaProducts(textFile: string[]): Product[] {
 		const [, item_sizeA, item_sizeB, item_sizeT, item_face, item_cubicQty] =
 			(fixedrow || textrow).match(full_regexp) ?? [];
 
-		console.log((fixedrow || textrow).match(full_regexp));
+		// console.log((fixedrow || textrow).match(full_regexp));
 
 		if (item_sizeA && item_sizeB && item_sizeT && item_face && item_cubicQty) {
 			idNum = `${invoiceNum || '_STG'}_${(++idCounter).toString().padStart(3, '0')}`;
@@ -342,7 +342,7 @@ function getStigaProducts(textFile: string[]): Product[] {
 					sizeA: Number(item_sizeA),
 					sizeB: Number(item_sizeB),
 					face: getFaceType(item_face),
-					color: getColor(item_face, item_face),
+					color: getColor(item_face, getFaceType(item_face)),
 					qtyValue: Number(item_cubicQty.replace(/,/, '.')),
 					qtyUnit: 'm3',
 					sourcetxt: `${sourceTextOne}\n${sourceTextTwo}`,

@@ -113,12 +113,12 @@ export function getGlueType(text: string): string {
 export function getFaceType(text: string): string {
 	let result = '';
 
-	const regexpGrade = /\b(S|B|BB|CP|WG|WGE|C|CC|V|[WFM]( ?[ALT])?( I{1,2})?)\b/;
+	const regexpGrade = /\b(S|B|BB|CP|WG|WGE|C|CC|V|[WFM]( ?[12ALT])?( I{1,2})?)\b/;
 	const expression = new RegExp(`${regexpGrade.source}/${regexpGrade.source}`, 'gi');
 	if (expression.test(text)) {
 		const grade = text.match(expression);
 		result = grade ? grade[0] : '??/??';
-		result = result.replace(/( ?[ALT])?( I{1,2})?/g, '');
+		result = result.replace(/( ?[12ALT])?( I{1,2})?/g, '');
 	}
 	/*!!! Keep order. Any order if equal number. !!! */
 
@@ -134,7 +134,7 @@ export function getFaceType(text: string): string {
 	/*1*/ if (/s10\//gi.test(text)) result = 'C/C';
 	/*1*/ if (/s11\//gi.test(text)) result = 'Kilo';
 	/*1*/ if (/s12\/|s13\//gi.test(text)) result = 'F/F'; // II applied in *4*
-	/*1*/ if (/s14\/|s15\//gi.test(text)) result = 'W/F'; // II applied in *4*
+	/*1*/ if (/s14\/|s15\//gi.test(text)) result = 'F/W'; // II applied in *4*
 	/*1*/ if (/s16\/|s17\//gi.test(text)) result = 'W/W'; // II applied in *4*
 	/*1*/ if (/s18\//gi.test(text)) result = 'CP/C';
 	/*1*/ if (/s19\//gi.test(text)) result = 'M/WG';
@@ -169,7 +169,7 @@ export function getFaceType(text: string): string {
 
 	/*4*/ // !important Apply II grade at the end
 	// /*4*/ if (/s13\/|s15\/|s17\/|((WT|FA|MA|W|F|M) II)/gi.test(text)) result += ' II'
-	/*4*/ if (/s13\/|s15\/|s17\/|([WFM]( ?[ALT])? II)/gi.test(text)) result += ' II';
+	/*4*/ if (/s13\/|s15\/|s17\/|([WFM]( ?[2ALT])? II)/gi.test(text)) result += ' II';
 
 	return result;
 }
