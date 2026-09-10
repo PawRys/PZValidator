@@ -118,6 +118,7 @@ export function getFaceType(text: string): string {
 	if (expression.test(text)) {
 		const grade = text.match(expression);
 		result = grade ? grade[0] : '??/??';
+		result = result.replace(/F\/W/g, 'W/F');
 		result = result.replace(/( ?[12ALT])?( I{1,2})?/g, '');
 	}
 	/*!!! Keep order. Any order if equal number. !!! */
@@ -134,7 +135,7 @@ export function getFaceType(text: string): string {
 	/*1*/ if (/s10\//gi.test(text)) result = 'C/C';
 	/*1*/ if (/s11\//gi.test(text)) result = 'Kilo';
 	/*1*/ if (/s12\/|s13\//gi.test(text)) result = 'F/F'; // II applied in *4*
-	/*1*/ if (/s14\/|s15\//gi.test(text)) result = 'F/W'; // II applied in *4*
+	/*1*/ if (/s14\/|s15\//gi.test(text)) result = 'W/F'; // II applied in *4*
 	/*1*/ if (/s16\/|s17\//gi.test(text)) result = 'W/W'; // II applied in *4*
 	/*1*/ if (/s18\//gi.test(text)) result = 'CP/C';
 	/*1*/ if (/s19\//gi.test(text)) result = 'M/WG';
